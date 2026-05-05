@@ -467,18 +467,49 @@
     <div class="quick-bar d-flex justify-content-between align-items-center">
       <div>
         <h5 class="fw-bold mb-1"><i class="bi bi-lightning-charge-fill me-2"></i>Pastor's Desk</h5>
-        <div style="font-size:0.85rem;opacity:0.85">Capture ideas, delegate requests, and track what's off your plate.</div>
+        <div style="font-size:0.85rem;opacity:0.85">Capture ideas, delegate requests, plan teaching series, and track what's off your plate.</div>
       </div>
-      <button class="btn btn-accent" onclick="openTaskModal()"><i class="bi bi-plus-lg me-1"></i> Capture Task / Idea</button>
+      <div class="d-flex gap-2">
+        <button class="btn btn-accent" id="pd-task-btn" onclick="openTaskModal()"><i class="bi bi-plus-lg me-1"></i> Capture Task / Idea</button>
+        <button class="btn btn-accent" id="pd-series-btn" style="display:none" onclick="openSeriesModal()"><i class="bi bi-plus-lg me-1"></i> New Series</button>
+        <button class="btn btn-accent" id="pd-sermon-btn" style="display:none" onclick="openSermonModal(null, currentSeriesId)"><i class="bi bi-plus-lg me-1"></i> Add Sermon</button>
+      </div>
     </div>
-    <ul class="nav nav-pills mb-3" id="task-tabs">
-      <li class="nav-item"><a class="nav-link active" href="#" onclick="return filterTasks('all',this)">All</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="return filterTasks('idea',this)">💡 Ideas</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="return filterTasks('assigned',this)">📋 Assigned</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="return filterTasks('inprogress',this)">🔄 In Progress</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="return filterTasks('done',this)">✅ Done</a></li>
+
+    <!-- Main tabs -->
+    <ul class="nav nav-tabs mb-0" style="border-bottom:2px solid #dee2e6">
+      <li class="nav-item"><a class="nav-link active" href="#" id="pd-tab-desk" onclick="switchPDTab('desk');return false;"><i class="bi bi-clipboard-check me-1"></i>Desk</a></li>
+      <li class="nav-item"><a class="nav-link" href="#" id="pd-tab-teaching" onclick="switchPDTab('teaching');return false;"><i class="bi bi-mic me-1"></i>Teaching Series</a></li>
     </ul>
-    <div id="tasks-list"></div>
+
+    <!-- Desk pane -->
+    <div id="pd-desk-pane" class="pt-3">
+      <ul class="nav nav-pills mb-3" id="task-tabs">
+        <li class="nav-item"><a class="nav-link active" href="#" onclick="return filterTasks('all',this)">All</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="return filterTasks('idea',this)">💡 Ideas</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="return filterTasks('assigned',this)">📋 Assigned</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="return filterTasks('inprogress',this)">🔄 In Progress</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="return filterTasks('done',this)">✅ Done</a></li>
+      </ul>
+      <div id="tasks-list"></div>
+    </div>
+
+    <!-- Teaching Series pane -->
+    <div id="pd-teaching-pane" style="display:none" class="pt-3">
+      <!-- Series list -->
+      <div id="series-list-pane">
+        <div id="series-grid" class="row g-3"></div>
+      </div>
+      <!-- Sermon list (drill-down) -->
+      <div id="sermon-list-pane" style="display:none">
+        <div class="d-flex align-items-center gap-3 mb-4">
+          <button class="btn btn-sm btn-outline-secondary" onclick="backToSeriesList()"><i class="bi bi-arrow-left me-1"></i>All Series</button>
+          <h6 class="fw-bold mb-0" id="current-series-title"></h6>
+          <span class="badge" id="current-series-status"></span>
+        </div>
+        <div id="sermons-grid"></div>
+      </div>
+    </div>
   </div>
 
   <!-- SETTINGS -->
@@ -1098,6 +1129,118 @@ alter publication supabase_realtime add table church_data;</pre>
   </div>
 </div>
 
+<!-- Series Modal -->
+<div class="modal fade" id="modal-series" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title fw-bold" id="modal-series-title">New Teaching Series</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <input type="hidden" id="sr-id">
+        <div class="row g-3">
+          <div class="col-12"><label class="form-label">Series Name <span class="text-danger">*</span></label><input type="text" class="form-control" id="sr-name" placeholder="e.g. Rooted in Faith"></div>
+          <div class="col-12"><label class="form-label">Description</label><textarea class="form-control" id="sr-desc" rows="3" placeholder="What is this series about? Core theme or vision…"></textarea></div>
+          <div class="col-6"><label class="form-label">Start Date</label><input type="date" class="form-control" id="sr-start"></div>
+          <div class="col-6"><label class="form-label">End Date</label><input type="date" class="form-control" id="sr-end"></div>
+          <div class="col-12"><label class="form-label">Status</label>
+            <select class="form-select" id="sr-status">
+              <option value="planned">📅 Planned</option>
+              <option value="active">🔥 Active</option>
+              <option value="completed">✅ Completed</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-light" data-bs-dismiss="modal">Cancel</button><button class="btn btn-accent" onclick="saveSeries()">Save Series</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- Sermon Modal -->
+<div class="modal fade" id="modal-sermon" tabindex="-1">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title fw-bold" id="modal-sermon-title">Add Sermon</h5>
+          <div class="text-muted small" id="modal-sermon-series-name"></div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="sm-id">
+        <input type="hidden" id="sm-series-id">
+
+        <!-- Section 1: Sermon Details -->
+        <div class="p-3 rounded mb-4" style="background:#f0edf8;border-left:4px solid var(--primary)">
+          <h6 class="fw-bold mb-3" style="color:var(--primary)"><i class="bi bi-journal-bookmark-fill me-2"></i>Sermon Details</h6>
+          <div class="row g-3">
+            <div class="col-md-4"><label class="form-label">Sermon Date</label><input type="date" class="form-control" id="sm-date"></div>
+            <div class="col-md-4"><label class="form-label">Series Segment <span class="text-muted small">(e.g. Week 3)</span></label><input type="text" class="form-control" id="sm-segment" placeholder="Week 1"></div>
+            <div class="col-md-4"><label class="form-label">Sermon Title <span class="text-danger">*</span></label><input type="text" class="form-control" id="sm-title" placeholder="e.g. Holding On"></div>
+            <div class="col-md-6"><label class="form-label">Anchor Scripture</label><input type="text" class="form-control" id="sm-scripture" placeholder="e.g. John 15:1-8"></div>
+            <div class="col-md-6"><label class="form-label">Bottom Line <span class="text-muted small">(one sentence takeaway)</span></label><input type="text" class="form-control" id="sm-bottomline" placeholder="When you stay connected to Jesus, you will bear fruit."></div>
+            <div class="col-12"><label class="form-label">What is the Felt Need? <span class="text-muted small">(what does the audience feel this addresses?)</span></label><textarea class="form-control" id="sm-feltneed" rows="2" placeholder="People who feel stuck, dry, or disconnected in their faith…"></textarea></div>
+          </div>
+        </div>
+
+        <!-- Section 2: Social Media Content Plan -->
+        <div class="p-3 rounded mb-4" style="background:#fff8ed;border-left:4px solid var(--accent)">
+          <h6 class="fw-bold mb-3" style="color:#a0630a"><i class="bi bi-share me-2"></i>Weekly Social Media Content Plan</h6>
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label">🪝 Hook Post #1 <span class="text-muted small">(curiosity / question / relatable problem)</span></label>
+              <textarea class="form-control" id="sm-hook1" rows="3" placeholder="Ever felt like you're doing all the right things but still feel empty?…"></textarea>
+            </div>
+            <div class="col-12">
+              <label class="form-label">🪝 Hook Post #2 <span class="text-muted small">(personal story / bold statement / bold question)</span></label>
+              <textarea class="form-control" id="sm-hook2" rows="3" placeholder="I used to think staying connected to God meant having a perfect quiet time. Turns out, it's simpler than that…"></textarea>
+            </div>
+            <div class="col-12">
+              <label class="form-label">📣 Review Post <span class="text-muted small">(key takeaway recap, encourage engagement)</span></label>
+              <textarea class="form-control" id="sm-review" rows="3" placeholder="Yesterday we talked about staying rooted. Here's the one thing we hope you remember: [Bottom Line]…"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: E-Note Content -->
+        <div class="p-3 rounded" style="background:#edf7f0;border-left:4px solid #28a745">
+          <h6 class="fw-bold mb-3" style="color:#1a6b38"><i class="bi bi-envelope-paper me-2"></i>Weekly E-Note Sermon Content</h6>
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label">📖 Preview <span class="text-muted small">(sent before the sermon — builds anticipation)</span></label>
+              <textarea class="form-control" id="sm-preview" rows="4" placeholder="This Sunday we're starting our new series. Here's a question to sit with before you arrive…"></textarea>
+            </div>
+            <div class="col-12">
+              <label class="form-label">✍️ Review <span class="text-muted small">(sent after the sermon — reinforces the message)</span></label>
+              <textarea class="form-control" id="sm-enote-review" rows="4" placeholder="Thank you for worshipping with us! Here's a recap of what we explored together…"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-accent" onclick="saveSermon()">Save Sermon</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- User Invite Link Modal -->
+<div class="modal fade" id="modal-invite" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title fw-bold"><i class="bi bi-send me-2"></i>Invite Link Ready</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <p class="text-muted small mb-3">Share this message with <strong id="invite-user-name"></strong> so they can log in. They'll need this information to access the app.</p>
+        <div class="p-3 rounded mb-3" style="background:#f8f9fb;border:1px solid #dee2e6;white-space:pre-wrap;font-size:0.88rem;line-height:1.6" id="invite-message-text"></div>
+        <button class="btn btn-primary w-100" onclick="copyInviteMessage()"><i class="bi bi-clipboard me-2"></i>Copy Invite Message</button>
+        <div class="text-success small text-center mt-2" id="invite-copied-msg" style="display:none"><i class="bi bi-check-circle me-1"></i>Copied to clipboard!</div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-light" data-bs-dismiss="modal">Done</button></div>
+    </div>
+  </div>
+</div>
+
 <!-- ════════════════════════════════════════════════
      JAVASCRIPT
 ════════════════════════════════════════════════ -->
@@ -1301,7 +1444,7 @@ async function loadData() {
     const json = await aeDecrypt(_cryptoKey, raw);
     appData = JSON.parse(json);
     // ensure arrays/objects exist
-    ['members','visitors','teams','tasks','policies','culture_docs','ministry_resources'].forEach(k => {
+    ['members','visitors','teams','tasks','policies','culture_docs','ministry_resources','teaching_series','teaching_sermons'].forEach(k => {
       if (!Array.isArray(appData[k])) appData[k] = [];
     });
     if (!appData.settings || typeof appData.settings !== 'object') appData.settings = {};
@@ -1356,7 +1499,7 @@ function updateTimerDisplay() {
 function lockApp() {
   clearTimeout(_lockTimer); clearInterval(_lockCountdown);
   _cryptoKey = null; _currentUser = null;
-  appData = { members:[], visitors:[], teams:[], tasks:[], settings:{} };
+  appData = { members:[], visitors:[], teams:[], tasks:[], settings:{}, teaching_series:[], teaching_sermons:[] };
   document.getElementById('lock-screen').classList.remove('hidden');
   showLockForm();
 }
@@ -1720,7 +1863,7 @@ function setupSupabaseRealtime() {
         try {
           const json = await aeDecrypt(_cryptoKey, remoteEnc);
           const d = JSON.parse(json);
-          ['members','visitors','teams','tasks','policies','culture_docs','ministry_resources'].forEach(k => {
+          ['members','visitors','teams','tasks','policies','culture_docs','ministry_resources','teaching_series','teaching_sermons'].forEach(k => {
             if (!Array.isArray(d[k])) d[k] = [];
           });
           if (!d.settings || typeof d.settings !== 'object') d.settings = {};
@@ -1730,7 +1873,7 @@ function setupSupabaseRealtime() {
             const pid = active.id.replace('page-', '');
             const map = {
               dashboard: renderDashboard, members: renderMembers, visitors: renderVisitors,
-              teams: renderTeams, 'pastors-desk': () => renderTasks(currentTaskFilter),
+              teams: renderTeams, 'pastors-desk': () => { renderTasks(currentTaskFilter); if (currentPDTab === 'teaching') renderSeries(); },
               policies: () => renderDocs('policy'), ministry: () => { renderDocs('ministry'); renderDocs('culture'); },
               settings: loadSettings,
             };
@@ -1870,7 +2013,7 @@ function showPage(page) {
     members:        renderMembers,
     visitors:       renderVisitors,
     teams:          renderTeams,
-    'pastors-desk': () => renderTasks(currentTaskFilter),
+    'pastors-desk': () => { renderTasks(currentTaskFilter); if (currentPDTab === 'teaching') renderSeries(); },
     policies:       () => renderDocs('policy'),
     ministry:       () => { renderDocs('ministry'); renderDocs('culture'); },
     settings:       loadSettings,
@@ -2397,6 +2540,223 @@ function deleteTask(id) {
 }
 
 /* ════════════════════════════════════════════════
+   TEACHING SERIES
+════════════════════════════════════════════════ */
+let currentPDTab    = 'desk';
+let currentSeriesId = null;
+
+function switchPDTab(tab) {
+  currentPDTab = tab;
+  document.getElementById('pd-tab-desk').classList.toggle('active', tab === 'desk');
+  document.getElementById('pd-tab-teaching').classList.toggle('active', tab === 'teaching');
+  document.getElementById('pd-desk-pane').style.display     = tab === 'desk'     ? '' : 'none';
+  document.getElementById('pd-teaching-pane').style.display = tab === 'teaching' ? '' : 'none';
+  updatePDHeaderBtns();
+  if (tab === 'teaching') renderSeries();
+}
+
+function updatePDHeaderBtns() {
+  const taskBtn   = document.getElementById('pd-task-btn');
+  const seriesBtn = document.getElementById('pd-series-btn');
+  const sermonBtn = document.getElementById('pd-sermon-btn');
+  if (currentPDTab === 'desk') {
+    taskBtn.style.display   = '';
+    seriesBtn.style.display = 'none';
+    sermonBtn.style.display = 'none';
+  } else if (currentSeriesId) {
+    taskBtn.style.display   = 'none';
+    seriesBtn.style.display = 'none';
+    sermonBtn.style.display = '';
+  } else {
+    taskBtn.style.display   = 'none';
+    seriesBtn.style.display = '';
+    sermonBtn.style.display = 'none';
+  }
+}
+
+function renderSeries() {
+  const series = db.get('teaching_series').slice().sort((a,b) => dateCmp(a.startDate, b.startDate));
+  const grid   = document.getElementById('series-grid');
+  if (!grid) return;
+  if (series.length === 0) {
+    grid.innerHTML = `<div class="col-12"><div class="empty-state"><i class="bi bi-collection"></i><p>No teaching series yet. Click <strong>New Series</strong> to get started.</p></div></div>`;
+    return;
+  }
+  const statusMeta = { active:{icon:'🔥',bg:'#fff3cd',color:'#856404'}, planned:{icon:'📅',bg:'#e8e4f8',color:'var(--primary)'}, completed:{icon:'✅',bg:'#d4edda',color:'#155724'} };
+  grid.innerHTML = series.map(s => {
+    const sm = statusMeta[s.status] || statusMeta.planned;
+    const sermons = db.get('teaching_sermons').filter(x => x.seriesId === s.id);
+    return `<div class="col-md-4">
+      <div class="card h-100 shadow-sm" style="cursor:pointer;border-top:4px solid var(--primary)" onclick="openSeriesView('${s.id}')">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <h6 class="fw-bold mb-0" style="line-height:1.3">${esc(s.name)}</h6>
+            <span class="badge ms-2 flex-shrink-0" style="background:${sm.bg};color:${sm.color}">${sm.icon} ${s.status}</span>
+          </div>
+          ${s.description ? `<p class="text-muted small mb-2" style="line-height:1.5">${esc(s.description)}</p>` : ''}
+          <div class="text-muted" style="font-size:0.78rem">
+            ${s.startDate ? `<span class="me-3"><i class="bi bi-calendar me-1"></i>${s.startDate}${s.endDate?' → '+s.endDate:''}</span>` : ''}
+            <span><i class="bi bi-mic me-1"></i>${sermons.length} sermon${sermons.length!==1?'s':''}</span>
+          </div>
+        </div>
+        <div class="card-footer bg-transparent d-flex justify-content-end gap-2 py-2">
+          <button class="btn btn-sm btn-outline-secondary" onclick="event.stopPropagation();openSeriesModal('${s.id}')"><i class="bi bi-pencil"></i></button>
+          <button class="btn btn-sm btn-outline-danger"    onclick="event.stopPropagation();deleteSeries('${s.id}')"><i class="bi bi-trash"></i></button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openSeriesView(seriesId) {
+  currentSeriesId = seriesId;
+  const s = db.get('teaching_series').find(x => x.id === seriesId);
+  if (!s) return;
+  document.getElementById('series-list-pane').style.display  = 'none';
+  document.getElementById('sermon-list-pane').style.display  = '';
+  document.getElementById('current-series-title').textContent = s.name;
+  const sm = {active:{icon:'🔥',bg:'#fff3cd',color:'#856404'}, planned:{icon:'📅',bg:'#e8e4f8',color:'var(--primary)'}, completed:{icon:'✅',bg:'#d4edda',color:'#155724'}};
+  const meta = sm[s.status] || sm.planned;
+  const badge = document.getElementById('current-series-status');
+  badge.textContent = meta.icon + ' ' + s.status;
+  badge.style.background = meta.bg; badge.style.color = meta.color;
+  updatePDHeaderBtns();
+  renderSermons(seriesId);
+}
+
+function backToSeriesList() {
+  currentSeriesId = null;
+  document.getElementById('series-list-pane').style.display = '';
+  document.getElementById('sermon-list-pane').style.display = 'none';
+  updatePDHeaderBtns();
+  renderSeries();
+}
+
+function renderSermons(seriesId) {
+  const sermons = db.get('teaching_sermons').filter(x => x.seriesId === seriesId)
+    .slice().sort((a,b) => dateCmp(a.date, b.date));
+  const grid = document.getElementById('sermons-grid');
+  if (!grid) return;
+  if (sermons.length === 0) {
+    grid.innerHTML = `<div class="empty-state"><i class="bi bi-mic-mute"></i><p>No sermons yet. Click <strong>Add Sermon</strong> to add your first one.</p></div>`;
+    return;
+  }
+  grid.innerHTML = sermons.map(sm => `
+    <div class="card shadow-sm mb-3">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start gap-3">
+          <div class="flex-grow-1">
+            <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
+              ${sm.segment ? `<span class="badge" style="background:var(--primary-light);color:var(--primary);font-size:0.72rem">${esc(sm.segment)}</span>` : ''}
+              <span class="fw-semibold">${esc(sm.title)}</span>
+              ${sm.date ? `<span class="text-muted" style="font-size:0.8rem"><i class="bi bi-calendar me-1"></i>${sm.date}</span>` : ''}
+            </div>
+            <div class="d-flex flex-wrap gap-3 text-muted" style="font-size:0.82rem">
+              ${sm.anchorScripture ? `<span><i class="bi bi-book me-1"></i>${esc(sm.anchorScripture)}</span>` : ''}
+              ${sm.bottomLine     ? `<span><i class="bi bi-quote me-1"></i>${esc(sm.bottomLine)}</span>` : ''}
+            </div>
+            ${sm.feltNeed ? `<div class="mt-2 small text-muted"><i class="bi bi-heart me-1"></i><em>Felt need:</em> ${esc(sm.feltNeed)}</div>` : ''}
+            <div class="d-flex gap-3 mt-2" style="font-size:0.78rem">
+              ${sm.socialHook1||sm.socialHook2||sm.socialReview ? `<span class="badge" style="background:#fff8ed;color:#a0630a"><i class="bi bi-share me-1"></i>Social ✓</span>` : ''}
+              ${sm.eNotePreview||sm.eNoteReview ? `<span class="badge" style="background:#edf7f0;color:#1a6b38"><i class="bi bi-envelope-paper me-1"></i>E-Note ✓</span>` : ''}
+            </div>
+          </div>
+          <div class="d-flex gap-1 flex-shrink-0">
+            <button class="btn btn-sm btn-outline-secondary" onclick="openSermonModal('${sm.id}','${sm.seriesId}')"><i class="bi bi-pencil"></i></button>
+            <button class="btn btn-sm btn-outline-danger" onclick="deleteSermon('${sm.id}')"><i class="bi bi-trash"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function openSeriesModal(id) {
+  const s = id ? db.get('teaching_series').find(x => x.id === id) : null;
+  document.getElementById('modal-series-title').textContent = s ? 'Edit Series' : 'New Teaching Series';
+  document.getElementById('sr-id').value    = s?.id          || '';
+  document.getElementById('sr-name').value  = s?.name        || '';
+  document.getElementById('sr-desc').value  = s?.description || '';
+  document.getElementById('sr-start').value = s?.startDate   || '';
+  document.getElementById('sr-end').value   = s?.endDate     || '';
+  document.getElementById('sr-status').value= s?.status      || 'planned';
+  showModal('modal-series');
+}
+
+function saveSeries() {
+  const id = val('sr-id');
+  const obj = { id:id||uid(), name:val('sr-name'), description:val('sr-desc'),
+    startDate:val('sr-start'), endDate:val('sr-end'), status:val('sr-status'),
+    createdAt:id?undefined:new Date().toISOString() };
+  if (!obj.name) { alert('Series name is required.'); return; }
+  const list = db.get('teaching_series');
+  db.set('teaching_series', id ? list.map(x => x.id===id ? {...x,...obj} : x) : [...list, obj]);
+  hideModal('modal-series');
+  renderSeries();
+}
+
+function deleteSeries(id) {
+  if (!confirm('Delete this series and all its sermons?')) return;
+  db.set('teaching_series',  db.get('teaching_series').filter(x => x.id !== id));
+  db.set('teaching_sermons', db.get('teaching_sermons').filter(x => x.seriesId !== id));
+  if (currentSeriesId === id) backToSeriesList();
+  else renderSeries();
+}
+
+function openSermonModal(id, seriesId) {
+  const sm = id ? db.get('teaching_sermons').find(x => x.id === id) : null;
+  const sid = seriesId || sm?.seriesId || currentSeriesId;
+  const series = db.get('teaching_series').find(x => x.id === sid);
+  document.getElementById('modal-sermon-title').textContent      = sm ? 'Edit Sermon' : 'Add Sermon';
+  document.getElementById('modal-sermon-series-name').textContent = series ? series.name : '';
+  document.getElementById('sm-id').value          = sm?.id             || '';
+  document.getElementById('sm-series-id').value   = sid               || '';
+  document.getElementById('sm-date').value         = sm?.date          || '';
+  document.getElementById('sm-segment').value      = sm?.seriesSegment || '';
+  document.getElementById('sm-title').value        = sm?.title         || '';
+  document.getElementById('sm-scripture').value    = sm?.anchorScripture|| '';
+  document.getElementById('sm-bottomline').value   = sm?.bottomLine    || '';
+  document.getElementById('sm-feltneed').value     = sm?.feltNeed      || '';
+  document.getElementById('sm-hook1').value        = sm?.socialHook1   || '';
+  document.getElementById('sm-hook2').value        = sm?.socialHook2   || '';
+  document.getElementById('sm-review').value       = sm?.socialReview  || '';
+  document.getElementById('sm-preview').value      = sm?.eNotePreview  || '';
+  document.getElementById('sm-enote-review').value = sm?.eNoteReview   || '';
+  showModal('modal-sermon');
+}
+
+function saveSermon() {
+  const id = val('sm-id');
+  const obj = {
+    id: id || uid(),
+    seriesId:       val('sm-series-id'),
+    date:           val('sm-date'),
+    seriesSegment:  val('sm-segment'),
+    title:          val('sm-title'),
+    anchorScripture:val('sm-scripture'),
+    bottomLine:     val('sm-bottomline'),
+    feltNeed:       val('sm-feltneed'),
+    socialHook1:    val('sm-hook1'),
+    socialHook2:    val('sm-hook2'),
+    socialReview:   val('sm-review'),
+    eNotePreview:   val('sm-preview'),
+    eNoteReview:    val('sm-enote-review'),
+    createdAt: id ? undefined : new Date().toISOString()
+  };
+  if (!obj.title) { alert('Sermon title is required.'); return; }
+  const list = db.get('teaching_sermons');
+  db.set('teaching_sermons', id ? list.map(x => x.id===id ? {...x,...obj} : x) : [...list, obj]);
+  hideModal('modal-sermon');
+  renderSermons(obj.seriesId);
+}
+
+function deleteSermon(id) {
+  if (!confirm('Delete this sermon?')) return;
+  const sm = db.get('teaching_sermons').find(x => x.id === id);
+  db.set('teaching_sermons', db.get('teaching_sermons').filter(x => x.id !== id));
+  if (sm) renderSermons(sm.seriesId);
+}
+
+/* ════════════════════════════════════════════════
    SETTINGS
 ════════════════════════════════════════════════ */
 function loadSettings() {
@@ -2434,7 +2794,8 @@ function exportData() {
     tasks:db.get('tasks'), settings:db.getObj('settings'),
     policies:db.get('policies'), culture_docs:db.get('culture_docs'),
     ministry_resources:db.get('ministry_resources'),
-    exportedAt:new Date().toISOString(), version:'3.0'
+    teaching_series:db.get('teaching_series'), teaching_sermons:db.get('teaching_sermons'),
+    exportedAt:new Date().toISOString(), version:'3.1'
   },null,2)],{type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download='church-backup-'+today()+'.json'; a.click();
@@ -2454,6 +2815,8 @@ function importData(e) {
       if (data.policies)            db.set('policies',            data.policies);
       if (data.culture_docs)        db.set('culture_docs',        data.culture_docs);
       if (data.ministry_resources)  db.set('ministry_resources',  data.ministry_resources);
+      if (data.teaching_series)     db.set('teaching_series',     data.teaching_series);
+      if (data.teaching_sermons)    db.set('teaching_sermons',    data.teaching_sermons);
       if (data.settings)            db.setObj('settings',         data.settings);
       alert('Data imported successfully!');
       renderDashboard();
@@ -2564,6 +2927,11 @@ async function saveUser() {
       const encMdk  = await aeEncrypt(userKey, mdkRaw);
       const newUser = { id:uid(), name, role, salt, enc_mdk:encMdk, active:true };
       saveUsersList([...users, newUser]);
+      // Show invite link for new user
+      hideModal('modal-user');
+      renderUsersTable();
+      showInviteModal(name, pw);
+      return;
     }
     hideModal('modal-user');
     renderUsersTable();
@@ -2579,6 +2947,26 @@ function deleteUser(id) {
   if (!confirm('Remove this user? They will no longer be able to log in.')) return;
   saveUsersList(getUsersList().filter(u => u.id !== id));
   renderUsersTable();
+}
+
+function showInviteModal(name, password) {
+  const appUrl = window.location.origin + window.location.pathname;
+  const churchName = db.getObj('settings').churchName || 'the app';
+  const message = `Hi ${name}!\n\nYou've been added to ${churchName}. Here's how to log in:\n\n🔗 App Link: ${appUrl}\n👤 Name: ${name}\n🔑 Password: ${password}\n\nTip: When you open the link, click "Sign In" and enter your name and password.`;
+  document.getElementById('invite-user-name').textContent   = name;
+  document.getElementById('invite-message-text').textContent = message;
+  document.getElementById('invite-copied-msg').style.display = 'none';
+  showModal('modal-invite');
+}
+
+async function copyInviteMessage() {
+  const text = document.getElementById('invite-message-text').textContent;
+  try {
+    await navigator.clipboard.writeText(text);
+    const el = document.getElementById('invite-copied-msg');
+    el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', 3000);
+  } catch { alert('Could not copy automatically. Please select and copy the text manually.'); }
 }
 
 /* ════════════════════════════════════════════════
