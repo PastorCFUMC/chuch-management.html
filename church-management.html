@@ -114,6 +114,20 @@
         </div>
         <div class="lock-error" id="unlock-error"></div>
         <button class="lock-btn" onclick="tryUnlock()">Unlock →</button>
+        <div style="text-align:center;margin-top:1.25rem">
+          <button type="button" onclick="showResetPanel()" style="background:none;border:none;color:rgba(255,255,255,0.45);font-size:0.78rem;cursor:pointer;text-decoration:underline">Forgot password / Can't log in?</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Emergency reset panel -->
+    <div id="reset-panel" style="display:none">
+      <div style="background:rgba(220,53,69,0.15);border:1px solid rgba(220,53,69,0.4);border-radius:12px;padding:1.25rem;text-align:left">
+        <div style="color:#ff8080;font-weight:700;margin-bottom:0.5rem"><i class="bi bi-exclamation-triangle-fill me-2"></i>Emergency Reset</div>
+        <p style="color:rgba(255,255,255,0.7);font-size:0.83rem;margin-bottom:1rem">If you have <strong style="color:#fff">Supabase connected</strong>, your encrypted data is safe in the cloud — you can reconnect after resetting. If you don't have Supabase, all local data will be permanently lost.</p>
+        <div class="lock-error" id="reset-error" style="margin-bottom:0.75rem"></div>
+        <button class="lock-btn" style="background:#dc3545;margin-bottom:0.5rem" onclick="confirmReset()">Reset App &amp; Clear Local Data</button>
+        <button type="button" onclick="hideResetPanel()" style="background:none;border:none;color:rgba(255,255,255,0.5);font-size:0.85rem;width:100%;cursor:pointer;margin-top:0.25rem">← Cancel</button>
       </div>
     </div>
 
@@ -930,6 +944,26 @@ function lockApp() {
   document.getElementById('lock-screen').classList.remove('hidden');
   showLockForm();
 }
+function showResetPanel(){
+  document.getElementById('unlock-form').style.display='none';
+  document.getElementById('legacy-form').style.display='none';
+  document.getElementById('reset-panel').style.display='block';
+}
+function hideResetPanel(){
+  document.getElementById('reset-panel').style.display='none';
+  showLockForm();
+}
+function confirmReset(){
+  const err=document.getElementById('reset-error');
+  if(!confirm('This will permanently delete all data stored on this device. Are you absolutely sure?')){return;}
+  const keysToRemove=['ch_enc_data','ch_users_list','ch_mdk_check','ch_church_name_hint','ch_supabase_config','ch_lock_mins',
+    'CHURCH_DATA','CHURCH_USERS','CHURCH_MDK_CHECK','church_enc_data','church_users_list'];
+  // Clear all church-related localStorage keys
+  Object.keys(localStorage).filter(k=>k.startsWith('ch_')||k.startsWith('church_')||k.startsWith('CHURCH_')).forEach(k=>localStorage.removeItem(k));
+  keysToRemove.forEach(k=>localStorage.removeItem(k));
+  setTimeout(()=>location.reload(), 300);
+}
+
 function showLockForm() {
   ['setup-form','unlock-form','legacy-form'].forEach(id=>document.getElementById(id).style.display='none');
   const settings=(()=>{ try { return JSON.parse(localStorage.getItem('ch_church_name_hint')||'{}'); } catch { return {}; } })();
