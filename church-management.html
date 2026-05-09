@@ -459,7 +459,7 @@
         </div>
 
         <!-- Service Notes -->
-        <div class="card">
+        <div class="card mb-3">
           <div class="card-header py-2 d-flex justify-content-between align-items-center" style="background:var(--primary-light)">
             <span class="fw-semibold" style="font-size:0.92rem"><i class="bi bi-sticky me-2 text-primary"></i>Service Notes</span>
             <button class="btn btn-sm btn-outline-secondary" onclick="openServiceNotesEdit()"><i class="bi bi-pencil"></i></button>
@@ -475,6 +475,21 @@
             </div>
           </div>
         </div>
+
+        <!-- Service Documents -->
+        <div class="card">
+          <div class="card-header py-2 d-flex justify-content-between align-items-center" style="background:var(--primary-light)">
+            <span class="fw-semibold" style="font-size:0.92rem"><i class="bi bi-paperclip me-2 text-primary"></i>Documents</span>
+            <button class="btn btn-sm btn-outline-primary" onclick="triggerServiceDocUpload(wpCurrentPlanId)"><i class="bi bi-upload me-1"></i>Upload</button>
+          </div>
+          <div class="card-body p-2">
+            <div id="wp-docs-list"></div>
+            <div id="wp-docs-empty" class="text-muted small py-2 text-center">No documents attached.</div>
+            <div id="wp-docs-progress" style="display:none" class="text-muted small py-1 px-1"><i class="bi bi-hourglass-split me-1"></i>Reading file…</div>
+          </div>
+        </div>
+        <!-- Hidden file input for doc uploads -->
+        <input type="file" id="wp-doc-file-input" style="display:none" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.png,.jpg,.jpeg,.mp3,.mp4" onchange="handleServiceDocUpload(event)">
       </div>
     </div>
   </div>
@@ -1123,9 +1138,8 @@ alter publication supabase_realtime add table church_data;</pre>
 'use strict';
 
 // ── Hardcode Supabase credentials here for auto-connect on any device ──
-const SUPABASE_URL      = 'const SUPABASE_URL      = 'https://eyaaqkezulkeavknmltm.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_1xtJKe2slonvOJ2pcmZOeg_MpQXbatL';;   // e.g. 'https://xyzxyz.supabase.co'
-const SUPABASE_ANON_KEY = '';   // e.g. 'eyJhbGciOiJIUzI1NiIsInR5...'
+const SUPABASE_URL      = 'https://eyaaqkezulkeavknmltm.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_1xtJKe2slonvOJ2pcmZOeg_MpQXbatL';
 
 /* ── Roles & Permissions ── */
 const ROLES = {
@@ -2587,6 +2601,7 @@ function renderServiceDetail(id) {
   renderServiceItems(plan);
   renderServiceTeam(plan);
   renderServiceNotes(plan);
+  renderServiceDocs(plan);
 }
 
 function renderServiceItems(plan) {
@@ -2880,6 +2895,126 @@ function saveServiceNotes() {
   cancelServiceNotesEdit();
   renderServiceNotes(plan);
   showToast('Notes saved.', 'success');
+}
+
+/* ── Service Documents ── */
+const WP_DOC_ICONS = {
+  pdf:  { icon:'bi-file-earmark-pdf',  color:'#dc3545' },
+  doc:  { icon:'bi-file-earmark-word', color:'#0d6efd' },
+  docx: { icon:'bi-file-earmark-word', color:'#0d6efd' },
+  xls:  { icon:'bi-file-earmark-excel',color:'#198754' },
+  xlsx: { icon:'bi-file-earmark-excel',color:'#198754' },
+  ppt:  { icon:'bi-file-earmark-ppt',  color:'#fd7e14' },
+  pptx: { icon:'bi-file-earmark-ppt',  color:'#fd7e14' },
+  txt:  { icon:'bi-file-earmark-text', color:'#6c757d' },
+  png:  { icon:'bi-file-earmark-image',color:'#6f42c1' },
+  jpg:  { icon:'bi-file-earmark-image',color:'#6f42c1' },
+  jpeg: { icon:'bi-file-earmark-image',color:'#6f42c1' },
+  mp3:  { icon:'bi-file-earmark-music',color:'#e83e8c' },
+  mp4:  { icon:'bi-file-earmark-play', color:'#20c997' },
+};
+
+function wpDocIcon(filename) {
+  const ext = (filename||'').split('.').pop().toLowerCase();
+  return WP_DOC_ICONS[ext] || { icon:'bi-file-earmark', color:'#6c757d' };
+}
+
+function wpFormatSize(bytes) {
+  if (!bytes) return '';
+  if (bytes < 1024) return bytes+'B';
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(1)+'KB';
+  return (bytes/(1024*1024)).toFixed(1)+'MB';
+}
+
+function triggerServiceDocUpload(planId) {
+  const inp = document.getElementById('wp-doc-file-input');
+  inp.dataset.planId = planId;
+  inp.value = '';
+  inp.click();
+}
+
+function handleServiceDocUpload(event) {
+  const planId = document.getElementById('wp-doc-file-input').dataset.planId;
+  const files  = Array.from(event.target.files);
+  if (!files.length || !planId) return;
+
+  document.getElementById('wp-docs-progress').style.display = '';
+  let loaded = 0;
+
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const plans = db.get('service_plans');
+      const plan  = plans.find(p=>p.id===planId);
+      if (!plan) return;
+      if (!plan.documents) plan.documents = [];
+      plan.documents.push({
+        id:         'doc_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
+        name:       file.name,
+        size:       file.size,
+        type:       file.type,
+        data:       e.target.result,
+        uploadedAt: new Date().toISOString(),
+      });
+      db.set('service_plans', plans);
+      loaded++;
+      if (loaded === files.length) {
+        document.getElementById('wp-docs-progress').style.display = 'none';
+        renderServiceDocs(plan);
+        showToast(loaded===1 ? '1 document attached.' : loaded+' documents attached.', 'success');
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderServiceDocs(plan) {
+  const docs  = plan.documents || [];
+  const el    = document.getElementById('wp-docs-list');
+  const empty = document.getElementById('wp-docs-empty');
+  if (!docs.length) {
+    el.innerHTML = '';
+    empty.style.display = '';
+    return;
+  }
+  empty.style.display = 'none';
+  el.innerHTML = docs.map(doc => {
+    const {icon, color} = wpDocIcon(doc.name);
+    const date = doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '';
+    return `<div class="d-flex align-items-center gap-2 py-2 border-bottom">
+      <i class="bi ${icon} fs-5" style="color:${color};flex-shrink:0"></i>
+      <div class="flex-grow-1 overflow-hidden">
+        <div class="fw-semibold text-truncate" style="font-size:0.87rem" title="${esc(doc.name)}">${esc(doc.name)}</div>
+        <div class="text-muted" style="font-size:0.75rem">${wpFormatSize(doc.size)}${date?' · '+date:''}</div>
+      </div>
+      <div class="d-flex gap-1 flex-shrink-0">
+        <button class="btn btn-link p-1 text-primary" onclick="downloadServiceDoc('${plan.id}','${doc.id}')" title="Download"><i class="bi bi-download" style="font-size:0.82rem"></i></button>
+        <button class="btn btn-link p-1 text-danger" onclick="deleteServiceDoc('${plan.id}','${doc.id}')" title="Remove"><i class="bi bi-trash" style="font-size:0.82rem"></i></button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function downloadServiceDoc(planId, docId) {
+  const plans = db.get('service_plans');
+  const plan  = plans.find(p=>p.id===planId);
+  const doc   = (plan?.documents||[]).find(d=>d.id===docId);
+  if (!doc) return;
+  const a = document.createElement('a');
+  a.href     = doc.data;
+  a.download = doc.name;
+  a.click();
+}
+
+function deleteServiceDoc(planId, docId) {
+  if (!confirm('Remove this document from the service?')) return;
+  const plans = db.get('service_plans');
+  const plan  = plans.find(p=>p.id===planId);
+  if (!plan) return;
+  plan.documents = (plan.documents||[]).filter(d=>d.id!==docId);
+  db.set('service_plans', plans);
+  renderServiceDocs(plan);
+  showToast('Document removed.', 'info');
 }
 
 /* ═══ END WORSHIP PLANNING ═══ */
