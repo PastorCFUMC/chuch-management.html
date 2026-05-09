@@ -1245,7 +1245,14 @@ async function loadData() {
 }
 
 function getUsersList()       { try { return JSON.parse(localStorage.getItem(USERS_KEY)||'[]'); } catch { return []; } }
-function saveUsersList(list)  { const v=JSON.stringify(list); localStorage.setItem(USERS_KEY,v); sbUpsert(USERS_KEY,v); }
+function saveUsersList(list)  {
+  const v=JSON.stringify(list);
+  const ts=new Date().toISOString();
+  localStorage.setItem(USERS_KEY,v);
+  localStorage.setItem('ch_users_ts',ts);
+  sbUpsert(USERS_KEY,v);
+  sbUpsert('ch_users_ts',ts);
+}
 function isLegacyMode()       { return !!localStorage.getItem(LEGACY_VERIFY); }
 function getSupabaseConfig()  { try { return JSON.parse(localStorage.getItem(SUPABASE_CONFIG_KEY)||'null'); } catch { return null; } }
 
@@ -1440,14 +1447,41 @@ async function syncFromSupabase() {
     updateSyncStatus('syncing');
     const {data,error}=await _sbClient.from('church_data').select('key,value');
     if (error) throw error;
-    if (data&&data.length) data.forEach(r=>{if(r.key&&r.value) localStorage.setItem(r.key,r.value);});
+    if (data&&data.length) {
+      // Build a lookup of what Supabase has
+      const remote={};
+      data.forEach(r=>{ if(r.key&&r.value) remote[r.key]=r.value; });
+
+      // For the users list, only accept Supabase's copy if it is provably newer
+      // than what we have locally. This prevents a stale Supabase record from
+      // overwriting a password change the user just made on this device.
+      const localUserTs  = localStorage.getItem('ch_users_ts') || '0';
+      const remoteUserTs = remote['ch_users_ts'] || '0';
+      const remoteUsersNewer = remoteUserTs > localUserTs;
+      const noLocalUsers = !localStorage.getItem(USERS_KEY);
+
+      Object.entries(remote).forEach(([k,v]) => {
+        if (k === USERS_KEY) {
+          // Only overwrite if Supabase is newer, or we have nothing locally
+          if (remoteUsersNewer || noLocalUsers) localStorage.setItem(k,v);
+        } else {
+          localStorage.setItem(k,v);
+        }
+      });
+
+      // If our local users list is newer, push it back to Supabase to keep in sync
+      if (!remoteUsersNewer && !noLocalUsers && remote[USERS_KEY]) {
+        const localUsers = localStorage.getItem(USERS_KEY);
+        if (localUsers) { sbUpsert(USERS_KEY, localUsers); sbUpsert('ch_users_ts', localUserTs); }
+      }
+    }
     updateSyncStatus('connected'); return true;
   } catch(e) { console.error('Supabase pull error',e); updateSyncStatus('error'); return false; }
 }
 async function syncAllToSupabase() {
   if (!_sbClient) return;
   try {
-    const rows=[USERS_KEY,DATA_KEY,MDK_CHECK_KEY,'ch_church_name_hint'].map(k=>({key:k,value:localStorage.getItem(k),updated_at:new Date().toISOString()})).filter(r=>r.value!==null);
+    const rows=[USERS_KEY,'ch_users_ts',DATA_KEY,MDK_CHECK_KEY,'ch_church_name_hint'].map(k=>({key:k,value:localStorage.getItem(k),updated_at:new Date().toISOString()})).filter(r=>r.value!==null);
     if (!rows.length) return;
     const {error}=await _sbClient.from('church_data').upsert(rows);
     if (error) throw error; updateSyncStatus('connected');
@@ -2139,6 +2173,9 @@ function changePassword(){
       const idx=users.indexOf(me);
       users[idx]={...me,salt:newSalt,enc_mdk:newEncMdk};
       saveUsersList(users);
+      // Force-push updated credentials to Supabase immediately so no other
+      // device or future sync can overwrite this password change.
+      await syncAllToSupabase().catch(()=>{});
       document.getElementById('cp-current').value='';
       document.getElementById('cp-new').value='';
       document.getElementById('cp-confirm').value='';
