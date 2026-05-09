@@ -212,6 +212,7 @@
     <div class="nav-section-label">Operations</div>
     <a class="nav-link" href="#" onclick="return showPage('teams')"><i class="bi bi-diagram-3"></i>Teams &amp; Volunteers</a>
     <a class="nav-link" href="#" onclick="return showPage('pastors-desk')"><i class="bi bi-lightning-charge"></i>Pastor's Desk</a>
+    <a class="nav-link" href="#" onclick="return showPage('worship')"><i class="bi bi-music-note-beamed"></i>Worship Planning</a>
     <div class="nav-section-label">Library</div>
     <a class="nav-link" href="#" onclick="return showPage('policies')"><i class="bi bi-shield-check"></i>Policies</a>
     <a class="nav-link" href="#" onclick="return showPage('ministry')"><i class="bi bi-book"></i>Ministry Resources</a>
@@ -387,6 +388,94 @@
         <span class="badge" id="current-series-status"></span>
       </div>
       <div id="sermons-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- WORSHIP PLANNING -->
+<div id="page-worship" class="page-section">
+  <div class="quick-bar d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+      <h5 class="fw-bold mb-1"><i class="bi bi-music-note-beamed me-2"></i>Worship Planning</h5>
+      <div style="font-size:0.85rem;opacity:0.85">Plan your weekly services — order of worship, songs, and team.</div>
+    </div>
+    <button class="btn btn-accent" onclick="openServicePlanModal(null)"><i class="bi bi-plus-lg me-1"></i>New Service</button>
+  </div>
+
+  <!-- Service list view -->
+  <div id="wp-list-view">
+    <div id="wp-service-list" class="row g-3 mt-1"></div>
+  </div>
+
+  <!-- Service detail view -->
+  <div id="wp-detail-view" style="display:none">
+    <!-- Detail header -->
+    <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+      <button class="btn btn-sm btn-outline-secondary" onclick="wpShowList()"><i class="bi bi-arrow-left me-1"></i>All Services</button>
+      <div class="flex-grow-1">
+        <span id="wp-detail-title" class="fw-bold fs-5"></span>
+        <span id="wp-detail-date" class="text-muted ms-2" style="font-size:0.9rem"></span>
+        <span id="wp-detail-time" class="text-muted ms-2" style="font-size:0.85rem"></span>
+      </div>
+      <button class="btn btn-sm btn-outline-primary" onclick="openServicePlanModal(wpCurrentPlanId)"><i class="bi bi-pencil me-1"></i>Edit Service</button>
+      <button class="btn btn-sm btn-outline-danger" onclick="deleteServicePlan(wpCurrentPlanId)"><i class="bi bi-trash me-1"></i>Delete</button>
+    </div>
+
+    <div class="row g-3">
+      <!-- LEFT: Service Order -->
+      <div class="col-lg-7">
+        <div class="card h-100">
+          <div class="card-header d-flex justify-content-between align-items-center py-2" style="background:var(--primary-light)">
+            <span class="fw-semibold" style="font-size:0.92rem"><i class="bi bi-list-ol me-2 text-primary"></i>Order of Service</span>
+            <button class="btn btn-sm btn-accent" onclick="openServiceItemModal(wpCurrentPlanId,null)"><i class="bi bi-plus-lg me-1"></i>Add Item</button>
+          </div>
+          <div class="card-body p-2">
+            <div id="wp-items-list"></div>
+            <div id="wp-items-empty" class="empty-state py-4" style="display:none">
+              <i class="bi bi-list-check" style="font-size:2rem;opacity:0.3"></i>
+              <div class="mt-2 text-muted">No items yet. Add your first service item.</div>
+            </div>
+            <!-- Running time footer -->
+            <div id="wp-runtime-bar" class="d-flex justify-content-between align-items-center px-2 pt-2 border-top mt-2" style="font-size:0.82rem;color:#6c757d;display:none!important">
+              <span><i class="bi bi-clock me-1"></i>Est. total time</span>
+              <span id="wp-total-runtime" class="fw-semibold">0 min</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Team + Notes -->
+      <div class="col-lg-5">
+        <!-- Team Roster -->
+        <div class="card mb-3">
+          <div class="card-header d-flex justify-content-between align-items-center py-2" style="background:var(--primary-light)">
+            <span class="fw-semibold" style="font-size:0.92rem"><i class="bi bi-people me-2 text-primary"></i>Team Roster</span>
+            <button class="btn btn-sm btn-outline-primary btn-sm" onclick="openServiceTeamModal(wpCurrentPlanId,null)"><i class="bi bi-person-plus me-1"></i>Add</button>
+          </div>
+          <div class="card-body p-2">
+            <div id="wp-team-list"></div>
+            <div id="wp-team-empty" class="text-muted small py-2 text-center" style="display:none">No team members assigned.</div>
+          </div>
+        </div>
+
+        <!-- Service Notes -->
+        <div class="card">
+          <div class="card-header py-2 d-flex justify-content-between align-items-center" style="background:var(--primary-light)">
+            <span class="fw-semibold" style="font-size:0.92rem"><i class="bi bi-sticky me-2 text-primary"></i>Service Notes</span>
+            <button class="btn btn-sm btn-outline-secondary" onclick="openServiceNotesEdit()"><i class="bi bi-pencil"></i></button>
+          </div>
+          <div class="card-body">
+            <div id="wp-notes-display" class="text-muted small" style="white-space:pre-wrap;min-height:60px"></div>
+            <div id="wp-notes-edit" style="display:none">
+              <textarea id="wp-notes-textarea" class="form-control" rows="5" placeholder="Rehearsal notes, announcements, theme details…"></textarea>
+              <div class="d-flex gap-2 mt-2">
+                <button class="btn btn-sm btn-primary" onclick="saveServiceNotes()">Save</button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="cancelServiceNotesEdit()">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -817,6 +906,176 @@ alter publication supabase_realtime add table church_data;</pre>
 </div>
 
 <!-- Import Modal -->
+<!-- MODAL: Service Plan -->
+<div class="modal fade" id="modal-service-plan" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title fw-bold" id="modal-sp-title">New Service</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <input type="hidden" id="sp-id">
+        <div class="row g-3">
+          <div class="col-6">
+            <label class="form-label">Service Date <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" id="sp-date">
+          </div>
+          <div class="col-6">
+            <label class="form-label">Service Time</label>
+            <input type="text" class="form-control" id="sp-time" placeholder="e.g. 10:00 AM">
+          </div>
+          <div class="col-12">
+            <label class="form-label">Service Title / Theme</label>
+            <input type="text" class="form-control" id="sp-title" placeholder="e.g. Hope in the Storm">
+          </div>
+          <div class="col-12">
+            <label class="form-label">Scripture Focus</label>
+            <input type="text" class="form-control" id="sp-scripture" placeholder="e.g. Psalm 46:1-3">
+          </div>
+          <div class="col-12">
+            <label class="form-label">General Notes</label>
+            <textarea class="form-control" id="sp-notes" rows="3" placeholder="Rehearsal times, theme notes, special announcements…"></textarea>
+          </div>
+        </div>
+        <div id="sp-error" class="text-danger small mt-2" style="display:none"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary" onclick="saveServicePlan()">Save Service</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Service Item -->
+<div class="modal fade" id="modal-service-item" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title fw-bold" id="modal-si-title">Add Item</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <input type="hidden" id="si-id">
+        <input type="hidden" id="si-plan-id">
+        <div class="row g-3">
+          <div class="col-6">
+            <label class="form-label">Item Type <span class="text-danger">*</span></label>
+            <select class="form-select" id="si-type" onchange="onSiTypeChange()">
+              <option value="song">🎵 Song</option>
+              <option value="prayer">🙏 Prayer</option>
+              <option value="scripture">📖 Scripture Reading</option>
+              <option value="sermon">✝️ Sermon / Message</option>
+              <option value="offering">💛 Offering</option>
+              <option value="announcement">📢 Announcement</option>
+              <option value="welcome">👋 Welcome</option>
+              <option value="communion">🍞 Communion</option>
+              <option value="baptism">💧 Baptism</option>
+              <option value="custom">📌 Custom</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label">Duration (min)</label>
+            <input type="number" class="form-control" id="si-duration" min="0" max="120" placeholder="5">
+          </div>
+          <div class="col-12">
+            <label class="form-label" id="si-title-label">Title / Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="si-title" placeholder="Song or item title">
+          </div>
+          <!-- Song-specific fields -->
+          <div class="col-6" id="si-key-group">
+            <label class="form-label">Key</label>
+            <select class="form-select" id="si-key">
+              <option value="">— select —</option>
+              <option>A</option><option>A#/Bb</option><option>B</option>
+              <option>C</option><option>C#/Db</option><option>D</option>
+              <option>D#/Eb</option><option>E</option><option>F</option>
+              <option>F#/Gb</option><option>G</option><option>G#/Ab</option>
+            </select>
+          </div>
+          <div class="col-6" id="si-tempo-group">
+            <label class="form-label">Tempo / Feel</label>
+            <select class="form-select" id="si-tempo">
+              <option value="">— select —</option>
+              <option>Upbeat / High Energy</option>
+              <option>Mid-tempo</option>
+              <option>Slow / Worshipful</option>
+              <option>Acoustic / Intimate</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Leader / Assigned To</label>
+            <input type="text" class="form-control" id="si-leader" placeholder="Name of person leading this item">
+          </div>
+          <div class="col-12">
+            <label class="form-label">Notes</label>
+            <textarea class="form-control" id="si-notes" rows="2" placeholder="Cues, arrangements, special instructions…"></textarea>
+          </div>
+        </div>
+        <div id="si-error" class="text-danger small mt-2" style="display:none"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary" onclick="saveServiceItem()">Save Item</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Service Team Member -->
+<div class="modal fade" id="modal-service-team" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title fw-bold">Team Member</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <input type="hidden" id="st-id">
+        <input type="hidden" id="st-plan-id">
+        <div class="mb-3">
+          <label class="form-label">Role / Position <span class="text-danger">*</span></label>
+          <select class="form-select" id="st-position">
+            <option value="">— select role —</option>
+            <optgroup label="Worship Team">
+              <option>Worship Leader</option>
+              <option>Lead Vocals</option>
+              <option>Backing Vocals</option>
+              <option>Acoustic Guitar</option>
+              <option>Electric Guitar</option>
+              <option>Bass Guitar</option>
+              <option>Keyboard / Piano</option>
+              <option>Drums / Percussion</option>
+              <option>Violin / Strings</option>
+            </optgroup>
+            <optgroup label="Tech">
+              <option>Sound / FOH</option>
+              <option>Monitor Mix</option>
+              <option>Projection / Slides</option>
+              <option>Livestream / Video</option>
+              <option>Lighting</option>
+            </optgroup>
+            <optgroup label="Service">
+              <option>Greeter / Host</option>
+              <option>Usher</option>
+              <option>Prayer Team</option>
+              <option>Children's Check-In</option>
+              <option>Communion Prep</option>
+              <option>Offering</option>
+              <option>Custom</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Name <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" id="st-name" placeholder="Team member name">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Notes</label>
+          <input type="text" class="form-control" id="st-notes" placeholder="e.g. confirmed, needs charts">
+        </div>
+        <div id="st-error" class="text-danger small" style="display:none"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary" onclick="saveServiceTeamMember()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal fade" id="modal-import" tabindex="-1">
   <div class="modal-dialog modal-xl">
     <div class="modal-content">
@@ -864,8 +1123,7 @@ alter publication supabase_realtime add table church_data;</pre>
 'use strict';
 
 // ── Hardcode Supabase credentials here for auto-connect on any device ──
-const SUPABASE_URL      = 'const SUPABASE_URL      = 'https://eyaaqkezulkeavknmltm.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_1xtJKe2slonvOJ2pcmZOeg_MpQXbatL';';   // e.g. 'https://xyzxyz.supabase.co'
+const SUPABASE_URL      = '';   // e.g. 'https://xyzxyz.supabase.co'
 const SUPABASE_ANON_KEY = '';   // e.g. 'eyJhbGciOiJIUzI1NiIsInR5...'
 
 /* ── Roles & Permissions ── */
@@ -893,7 +1151,7 @@ const PERMS = {
 const PAGE_PERMS = {
   members:'members', visitors:'visitors', teams:'teams_view',
   'pastors-desk':'tasks_own', policies:'policies_view',
-  culture:'culture_view', ministry:'ministry_view', settings:'dashboard',
+  culture:'culture_view', ministry:'ministry_view', worship:'tasks_own', settings:'dashboard',
 };
 
 /* ── Storage Keys ── */
@@ -910,7 +1168,7 @@ const PBKDF2_ITERS    = 150000;
 let _cryptoKey    = null;
 let _currentUser  = null;
 let _selectedUserId = null;
-let appData = { members:[], visitors:[], teams:[], tasks:[], policies:[], culture_docs:[], ministry_resources:[], teaching_series:[], teaching_sermons:[], settings:{} };
+let appData = { members:[], visitors:[], teams:[], tasks:[], policies:[], culture_docs:[], ministry_resources:[], teaching_series:[], teaching_sermons:[], service_plans:[], settings:{} };
 
 /* ── Permission helper ── */
 function can(perm) {
@@ -1310,7 +1568,7 @@ function showPage(page) {
   document.querySelectorAll('#sidebar .nav-link').forEach(l=>l.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');
   document.querySelectorAll('#sidebar .nav-link').forEach(l=>{ if(l.getAttribute('onclick')?.includes("'"+page+"'")) l.classList.add('active'); });
-  const renders={dashboard:renderDashboard,members:renderMembers,visitors:renderVisitors,teams:renderTeams,'pastors-desk':()=>{renderTasks(currentTaskFilter);if(currentPDTab==='teaching')renderSeries();},policies:()=>renderDocs('policy'),ministry:()=>{renderDocs('ministry');renderDocs('culture');},settings:loadSettings};
+  const renders={dashboard:renderDashboard,members:renderMembers,visitors:renderVisitors,teams:renderTeams,'pastors-desk':()=>{renderTasks(currentTaskFilter);if(currentPDTab==='teaching')renderSeries();},policies:()=>renderDocs('policy'),ministry:()=>{renderDocs('ministry');renderDocs('culture');},worship:renderServicePlans,settings:loadSettings};
   renders[page]?.(); return false;
 }
 const bsModal=id=>new bootstrap.Modal(document.getElementById(id));
@@ -2241,6 +2499,389 @@ function connectSupabaseManual(){
   showToast('Connecting to Supabase...','info');
 }
 
+
+
+/* ═══════════════════════════════════════════════════════════
+   WORSHIP PLANNING
+   ═══════════════════════════════════════════════════════════ */
+
+let wpCurrentPlanId = null;
+
+const WP_ITEM_TYPES = {
+  song:         { label:'Song',             icon:'🎵', color:'#d1fae5', textColor:'#065f46' },
+  prayer:       { label:'Prayer',           icon:'🙏', color:'#ede9fe', textColor:'#5b21b6' },
+  scripture:    { label:'Scripture',        icon:'📖', color:'#fef3c7', textColor:'#92400e' },
+  sermon:       { label:'Sermon',           icon:'✝️',  color:'#dbeafe', textColor:'#1e40af' },
+  offering:     { label:'Offering',         icon:'💛', color:'#fef9c3', textColor:'#713f12' },
+  announcement: { label:'Announcement',     icon:'📢', color:'#fee2e2', textColor:'#991b1b' },
+  welcome:      { label:'Welcome',          icon:'👋', color:'#e0f2fe', textColor:'#0369a1' },
+  communion:    { label:'Communion',        icon:'🍞', color:'#fce7f3', textColor:'#9d174d' },
+  baptism:      { label:'Baptism',          icon:'💧', color:'#cffafe', textColor:'#155e75' },
+  custom:       { label:'Custom',           icon:'📌', color:'#f3f4f6', textColor:'#374151' },
+};
+
+/* ── List view ── */
+function renderServicePlans() {
+  const plans = db.get('service_plans').slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const el = document.getElementById('wp-service-list');
+  wpShowList();
+  if (!plans.length) {
+    el.innerHTML = `<div class="col-12"><div class="empty-state py-5"><i class="bi bi-music-note-list" style="font-size:2.5rem;opacity:0.25"></i><div class="mt-2 text-muted">No services planned yet. Create your first service above.</div></div></div>`;
+    return;
+  }
+  el.innerHTML = plans.map(p => {
+    const d = p.date ? new Date(p.date+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'}) : 'No date';
+    const itemCount = (p.items||[]).length;
+    const teamCount = (p.team||[]).length;
+    const songCount = (p.items||[]).filter(i=>i.type==='song').length;
+    const totalMin  = (p.items||[]).reduce((s,i)=>s+(parseInt(i.duration)||0),0);
+    const isPast    = p.date && new Date(p.date+'T12:00:00') < new Date(new Date().toDateString());
+    return `<div class="col-md-6 col-xl-4">
+      <div class="card h-100 shadow-sm" style="cursor:pointer;border-left:4px solid var(--primary);transition:box-shadow 0.15s" onmouseenter="this.style.boxShadow='0 4px 16px rgba(74,63,143,0.18)'" onmouseleave="this.style.boxShadow=''" onclick="wpOpenPlan('${p.id}')">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start mb-1">
+            <div>
+              <div class="fw-bold" style="font-size:0.97rem">${esc(p.title||'Untitled Service')}</div>
+              <div class="text-muted" style="font-size:0.82rem">${d}${p.serviceTime?' · '+esc(p.serviceTime):''}</div>
+            </div>
+            ${isPast ? '<span class="badge bg-secondary" style="font-size:0.7rem">Past</span>' : '<span class="badge" style="background:var(--primary-light);color:var(--primary);font-size:0.7rem">Upcoming</span>'}
+          </div>
+          ${p.scripture?`<div class="text-muted small mb-2"><i class="bi bi-book me-1"></i>${esc(p.scripture)}</div>`:''}
+          <div class="d-flex gap-3 mt-2" style="font-size:0.8rem;color:#6c757d">
+            <span><i class="bi bi-list-ol me-1"></i>${itemCount} item${itemCount!==1?'s':''}</span>
+            <span><i class="bi bi-music-note me-1"></i>${songCount} song${songCount!==1?'s':''}</span>
+            <span><i class="bi bi-people me-1"></i>${teamCount} team</span>
+            ${totalMin?`<span><i class="bi bi-clock me-1"></i>${totalMin} min</span>`:''}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function wpShowList() {
+  document.getElementById('wp-list-view').style.display = '';
+  document.getElementById('wp-detail-view').style.display = 'none';
+  wpCurrentPlanId = null;
+}
+
+function wpOpenPlan(id) {
+  wpCurrentPlanId = id;
+  document.getElementById('wp-list-view').style.display = 'none';
+  document.getElementById('wp-detail-view').style.display = '';
+  renderServiceDetail(id);
+}
+
+/* ── Detail view ── */
+function renderServiceDetail(id) {
+  const plans = db.get('service_plans');
+  const plan  = plans.find(p=>p.id===id);
+  if (!plan) { wpShowList(); return; }
+
+  const d = plan.date ? new Date(plan.date+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}) : 'No date';
+  document.getElementById('wp-detail-title').textContent = plan.title || 'Untitled Service';
+  document.getElementById('wp-detail-date').textContent  = d;
+  document.getElementById('wp-detail-time').textContent  = plan.serviceTime ? '· '+plan.serviceTime : '';
+
+  renderServiceItems(plan);
+  renderServiceTeam(plan);
+  renderServiceNotes(plan);
+}
+
+function renderServiceItems(plan) {
+  const items = (plan.items||[]).slice().sort((a,b)=>(a.order||0)-(b.order||0));
+  const el    = document.getElementById('wp-items-list');
+  const empty = document.getElementById('wp-items-empty');
+  const bar   = document.getElementById('wp-runtime-bar');
+  const totalMin = items.reduce((s,i)=>s+(parseInt(i.duration)||0),0);
+
+  if (!items.length) {
+    el.style.display = 'none';
+    empty.style.display = '';
+    bar.style.setProperty('display','none','important');
+    return;
+  }
+  el.style.display = '';
+  empty.style.display = 'none';
+  bar.style.removeProperty('display');
+
+  document.getElementById('wp-total-runtime').textContent = totalMin + ' min';
+
+  el.innerHTML = items.map((item,idx) => {
+    const t = WP_ITEM_TYPES[item.type] || WP_ITEM_TYPES.custom;
+    return `<div class="d-flex align-items-start gap-2 p-2 mb-1 rounded" style="background:#fafbfc;border:1px solid #eee">
+      <div class="d-flex flex-column gap-1 pt-1" style="min-width:24px">
+        <button class="btn btn-link p-0 text-muted" style="line-height:1;font-size:0.75rem" onclick="wpMoveItem('${plan.id}','${item.id}',-1)" ${idx===0?'disabled':''}><i class="bi bi-chevron-up"></i></button>
+        <button class="btn btn-link p-0 text-muted" style="line-height:1;font-size:0.75rem" onclick="wpMoveItem('${plan.id}','${item.id}',1)" ${idx===items.length-1?'disabled':''}><i class="bi bi-chevron-down"></i></button>
+      </div>
+      <div class="flex-grow-1">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <span class="badge rounded-pill" style="background:${t.color};color:${t.textColor};font-size:0.72rem;font-weight:600">${t.icon} ${t.label}</span>
+          <span class="fw-semibold" style="font-size:0.9rem">${esc(item.title||'Untitled')}</span>
+          ${item.key?`<span class="badge bg-light text-dark border" style="font-size:0.72rem">Key of ${esc(item.key)}</span>`:''}
+          ${item.tempo?`<span class="badge bg-light text-dark border" style="font-size:0.72rem">${esc(item.tempo)}</span>`:''}
+          ${item.duration?`<span class="ms-auto text-muted" style="font-size:0.78rem;white-space:nowrap"><i class="bi bi-clock me-1"></i>${item.duration} min</span>`:''}
+        </div>
+        ${item.leader?`<div class="text-muted small mt-1"><i class="bi bi-person me-1"></i>${esc(item.leader)}</div>`:''}
+        ${item.notes?`<div class="text-muted small mt-1" style="font-style:italic">${esc(item.notes)}</div>`:''}
+      </div>
+      <div class="d-flex gap-1">
+        <button class="btn btn-link p-1 text-primary" onclick="openServiceItemModal('${plan.id}','${item.id}')" title="Edit"><i class="bi bi-pencil" style="font-size:0.82rem"></i></button>
+        <button class="btn btn-link p-1 text-danger" onclick="deleteServiceItem('${plan.id}','${item.id}')" title="Remove"><i class="bi bi-trash" style="font-size:0.82rem"></i></button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderServiceTeam(plan) {
+  const team  = plan.team||[];
+  const el    = document.getElementById('wp-team-list');
+  const empty = document.getElementById('wp-team-empty');
+  if (!team.length) {
+    el.innerHTML = '';
+    empty.style.display = '';
+    return;
+  }
+  empty.style.display = 'none';
+  el.innerHTML = team.map(m => `<div class="d-flex align-items-center gap-2 py-1 border-bottom">
+    <div class="flex-grow-1">
+      <div class="fw-semibold" style="font-size:0.88rem">${esc(m.name)}</div>
+      <div class="text-muted small">${esc(m.position)}${m.notes?' · '+esc(m.notes):''}</div>
+    </div>
+    <div class="d-flex gap-1">
+      <button class="btn btn-link p-1 text-primary" onclick="openServiceTeamModal('${plan.id}','${m.id}')" title="Edit"><i class="bi bi-pencil" style="font-size:0.8rem"></i></button>
+      <button class="btn btn-link p-1 text-danger" onclick="deleteServiceTeamMember('${plan.id}','${m.id}')" title="Remove"><i class="bi bi-trash" style="font-size:0.8rem"></i></button>
+    </div>
+  </div>`).join('');
+}
+
+function renderServiceNotes(plan) {
+  const el = document.getElementById('wp-notes-display');
+  if (plan.notes) {
+    el.textContent = plan.notes;
+    el.style.color = '';
+  } else {
+    el.textContent = 'No notes yet. Click the pencil icon to add.';
+    el.style.color = '#adb5bd';
+  }
+}
+
+/* ── Service Plan CRUD ── */
+function openServicePlanModal(id) {
+  const plans = db.get('service_plans');
+  const plan  = id ? plans.find(p=>p.id===id) : null;
+  document.getElementById('modal-sp-title').textContent = plan ? 'Edit Service' : 'New Service';
+  document.getElementById('sp-id').value        = plan?.id || '';
+  document.getElementById('sp-date').value      = plan?.date || '';
+  document.getElementById('sp-time').value      = plan?.serviceTime || '';
+  document.getElementById('sp-title').value     = plan?.title || '';
+  document.getElementById('sp-scripture').value = plan?.scripture || '';
+  document.getElementById('sp-notes').value     = plan?.notes || '';
+  document.getElementById('sp-error').style.display = 'none';
+  showModal('modal-service-plan');
+}
+
+function saveServicePlan() {
+  const id   = document.getElementById('sp-id').value;
+  const date = document.getElementById('sp-date').value.trim();
+  const title= document.getElementById('sp-title').value.trim();
+  const errEl= document.getElementById('sp-error');
+  if (!date) { errEl.textContent='Please select a service date.'; errEl.style.display=''; return; }
+  errEl.style.display = 'none';
+
+  const plans = db.get('service_plans');
+  if (id) {
+    const idx = plans.findIndex(p=>p.id===id);
+    if (idx>-1) {
+      plans[idx] = { ...plans[idx], date, serviceTime:document.getElementById('sp-time').value.trim(), title, scripture:document.getElementById('sp-scripture').value.trim(), notes:document.getElementById('sp-notes').value.trim() };
+    }
+  } else {
+    plans.push({ id:'sp_'+Date.now(), date, serviceTime:document.getElementById('sp-time').value.trim(), title, scripture:document.getElementById('sp-scripture').value.trim(), notes:document.getElementById('sp-notes').value.trim(), items:[], team:[] });
+  }
+  db.set('service_plans', plans);
+  hideModal('modal-service-plan');
+  if (id && wpCurrentPlanId===id) renderServiceDetail(id);
+  else renderServicePlans();
+  showToast(id ? 'Service updated.' : 'Service created!', 'success');
+}
+
+function deleteServicePlan(id) {
+  if (!confirm('Delete this service plan? This cannot be undone.')) return;
+  db.set('service_plans', db.get('service_plans').filter(p=>p.id!==id));
+  wpShowList();
+  renderServicePlans();
+  showToast('Service deleted.', 'info');
+}
+
+/* ── Service Item CRUD ── */
+function onSiTypeChange() {
+  const type = document.getElementById('si-type').value;
+  const isSong = type === 'song';
+  document.getElementById('si-key-group').style.display   = isSong ? '' : 'none';
+  document.getElementById('si-tempo-group').style.display = isSong ? '' : 'none';
+  document.getElementById('si-title-label').innerHTML = isSong
+    ? 'Song Title <span class="text-danger">*</span>'
+    : 'Title / Description <span class="text-danger">*</span>';
+}
+
+function openServiceItemModal(planId, itemId) {
+  const plans = db.get('service_plans');
+  const plan  = plans.find(p=>p.id===planId);
+  const item  = itemId ? (plan?.items||[]).find(i=>i.id===itemId) : null;
+  document.getElementById('modal-si-title').textContent = item ? 'Edit Item' : 'Add Item';
+  document.getElementById('si-id').value       = item?.id || '';
+  document.getElementById('si-plan-id').value  = planId;
+  document.getElementById('si-type').value     = item?.type || 'song';
+  document.getElementById('si-title').value    = item?.title || '';
+  document.getElementById('si-key').value      = item?.key || '';
+  document.getElementById('si-tempo').value    = item?.tempo || '';
+  document.getElementById('si-duration').value = item?.duration || '';
+  document.getElementById('si-leader').value   = item?.leader || '';
+  document.getElementById('si-notes').value    = item?.notes || '';
+  document.getElementById('si-error').style.display = 'none';
+  onSiTypeChange();
+  showModal('modal-service-item');
+}
+
+function saveServiceItem() {
+  const planId = document.getElementById('si-plan-id').value;
+  const id     = document.getElementById('si-id').value;
+  const title  = document.getElementById('si-title').value.trim();
+  const errEl  = document.getElementById('si-error');
+  if (!title) { errEl.textContent='Please enter a title.'; errEl.style.display=''; return; }
+  errEl.style.display = 'none';
+
+  const plans = db.get('service_plans');
+  const plan  = plans.find(p=>p.id===planId);
+  if (!plan) return;
+  if (!plan.items) plan.items = [];
+
+  const itemData = {
+    type:     document.getElementById('si-type').value,
+    title,
+    key:      document.getElementById('si-key').value,
+    tempo:    document.getElementById('si-tempo').value,
+    duration: document.getElementById('si-duration').value,
+    leader:   document.getElementById('si-leader').value.trim(),
+    notes:    document.getElementById('si-notes').value.trim(),
+  };
+
+  if (id) {
+    const idx = plan.items.findIndex(i=>i.id===id);
+    if (idx>-1) plan.items[idx] = { ...plan.items[idx], ...itemData };
+  } else {
+    const maxOrder = plan.items.reduce((m,i)=>Math.max(m,i.order||0),0);
+    plan.items.push({ id:'si_'+Date.now(), order:maxOrder+1, ...itemData });
+  }
+  db.set('service_plans', plans);
+  hideModal('modal-service-item');
+  renderServiceDetail(planId);
+  showToast('Item saved.', 'success');
+}
+
+function deleteServiceItem(planId, itemId) {
+  const plans = db.get('service_plans');
+  const plan  = plans.find(p=>p.id===planId);
+  if (!plan) return;
+  plan.items = (plan.items||[]).filter(i=>i.id!==itemId);
+  db.set('service_plans', plans);
+  renderServiceDetail(planId);
+}
+
+function wpMoveItem(planId, itemId, dir) {
+  const plans = db.get('service_plans');
+  const plan  = plans.find(p=>p.id===planId);
+  if (!plan) return;
+  const items = (plan.items||[]).slice().sort((a,b)=>(a.order||0)-(b.order||0));
+  const idx   = items.findIndex(i=>i.id===itemId);
+  const swapIdx = idx + dir;
+  if (swapIdx < 0 || swapIdx >= items.length) return;
+  const aOrd = items[idx].order||0;
+  const bOrd = items[swapIdx].order||0;
+  items[idx].order    = bOrd;
+  items[swapIdx].order= aOrd;
+  plan.items = items;
+  db.set('service_plans', plans);
+  renderServiceDetail(planId);
+}
+
+/* ── Service Team CRUD ── */
+function openServiceTeamModal(planId, memberId) {
+  const plans  = db.get('service_plans');
+  const plan   = plans.find(p=>p.id===planId);
+  const member = memberId ? (plan?.team||[]).find(m=>m.id===memberId) : null;
+  document.getElementById('st-id').value       = member?.id || '';
+  document.getElementById('st-plan-id').value  = planId;
+  document.getElementById('st-position').value = member?.position || '';
+  document.getElementById('st-name').value     = member?.name || '';
+  document.getElementById('st-notes').value    = member?.notes || '';
+  document.getElementById('st-error').style.display = 'none';
+  showModal('modal-service-team');
+}
+
+function saveServiceTeamMember() {
+  const planId   = document.getElementById('st-plan-id').value;
+  const id       = document.getElementById('st-id').value;
+  const position = document.getElementById('st-position').value;
+  const name     = document.getElementById('st-name').value.trim();
+  const errEl    = document.getElementById('st-error');
+  if (!position) { errEl.textContent='Please select a role.'; errEl.style.display=''; return; }
+  if (!name)     { errEl.textContent='Please enter a name.'; errEl.style.display=''; return; }
+  errEl.style.display = 'none';
+
+  const plans = db.get('service_plans');
+  const plan  = plans.find(p=>p.id===planId);
+  if (!plan) return;
+  if (!plan.team) plan.team = [];
+
+  const memberData = { position, name, notes:document.getElementById('st-notes').value.trim() };
+  if (id) {
+    const idx = plan.team.findIndex(m=>m.id===id);
+    if (idx>-1) plan.team[idx] = { ...plan.team[idx], ...memberData };
+  } else {
+    plan.team.push({ id:'st_'+Date.now(), ...memberData });
+  }
+  db.set('service_plans', plans);
+  hideModal('modal-service-team');
+  renderServiceDetail(planId);
+  showToast('Team member saved.', 'success');
+}
+
+function deleteServiceTeamMember(planId, memberId) {
+  const plans = db.get('service_plans');
+  const plan  = plans.find(p=>p.id===planId);
+  if (!plan) return;
+  plan.team = (plan.team||[]).filter(m=>m.id!==memberId);
+  db.set('service_plans', plans);
+  renderServiceDetail(planId);
+}
+
+/* ── Service Notes inline edit ── */
+function openServiceNotesEdit() {
+  const plans = db.get('service_plans');
+  const plan  = plans.find(p=>p.id===wpCurrentPlanId);
+  if (!plan) return;
+  document.getElementById('wp-notes-textarea').value = plan.notes||'';
+  document.getElementById('wp-notes-display').style.display = 'none';
+  document.getElementById('wp-notes-edit').style.display = '';
+  document.getElementById('wp-notes-textarea').focus();
+}
+function cancelServiceNotesEdit() {
+  document.getElementById('wp-notes-display').style.display = '';
+  document.getElementById('wp-notes-edit').style.display = 'none';
+}
+function saveServiceNotes() {
+  const plans = db.get('service_plans');
+  const plan  = plans.find(p=>p.id===wpCurrentPlanId);
+  if (!plan) return;
+  plan.notes = document.getElementById('wp-notes-textarea').value.trim();
+  db.set('service_plans', plans);
+  cancelServiceNotesEdit();
+  renderServiceNotes(plan);
+  showToast('Notes saved.', 'success');
+}
+
+/* ═══ END WORSHIP PLANNING ═══ */
 
 // ── Service Worker (PWA) ──────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
