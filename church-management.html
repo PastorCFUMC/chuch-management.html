@@ -164,19 +164,47 @@
         <div class="lock-error" id="unlock-error"></div>
         <button class="lock-btn" onclick="tryUnlock()">Unlock →</button>
         <div style="text-align:center;margin-top:1.25rem">
-          <button type="button" onclick="showResetPanel()" style="background:none;border:none;color:rgba(255,255,255,0.45);font-size:0.78rem;cursor:pointer;text-decoration:underline">Forgot password / Can't log in?</button>
+          <button type="button" onclick="showRecoveryPanel()" style="background:none;border:none;color:rgba(255,255,255,0.45);font-size:0.78rem;cursor:pointer;text-decoration:underline">Forgot password / Can't log in?</button>
         </div>
       </div>
     </div>
 
-    <!-- Emergency reset panel -->
+    <!-- Recovery panel -->
     <div id="reset-panel" style="display:none">
-      <div style="background:rgba(220,53,69,0.15);border:1px solid rgba(220,53,69,0.4);border-radius:12px;padding:1.25rem;text-align:left">
-        <div style="color:#ff8080;font-weight:700;margin-bottom:0.5rem"><i class="bi bi-exclamation-triangle-fill me-2"></i>Emergency Reset</div>
-        <p style="color:rgba(255,255,255,0.7);font-size:0.83rem;margin-bottom:1rem">If you have <strong style="color:#fff">Supabase connected</strong>, your encrypted data is safe in the cloud — you can reconnect after resetting. If you don't have Supabase, all local data will be permanently lost.</p>
-        <div class="lock-error" id="reset-error" style="margin-bottom:0.75rem"></div>
-        <button class="lock-btn" style="background:#dc3545;margin-bottom:0.5rem" onclick="confirmReset()">Reset App &amp; Clear Local Data</button>
-        <button type="button" onclick="hideResetPanel()" style="background:none;border:none;color:rgba(255,255,255,0.5);font-size:0.85rem;width:100%;cursor:pointer;margin-top:0.25rem">← Cancel</button>
+      <!-- Step 1: Recovery options -->
+      <div id="recovery-options">
+        <div style="color:#fff;font-weight:700;font-size:1rem;margin-bottom:0.75rem;text-align:center"><i class="bi bi-shield-lock me-2" style="color:#a78bfa"></i>Account Recovery</div>
+
+        <!-- Recovery access via Supabase key -->
+        <div style="background:rgba(167,139,250,0.12);border:1px solid rgba(167,139,250,0.35);border-radius:10px;padding:1rem;margin-bottom:0.75rem">
+          <div style="color:#c4bbff;font-weight:600;font-size:0.88rem;margin-bottom:0.35rem"><i class="bi bi-cloud-check me-1"></i>Recovery Access <span style="background:#2d2460;border:1px solid #6c5ce7;border-radius:20px;font-size:0.7rem;padding:2px 8px;margin-left:4px">Recommended</span></div>
+          <div style="color:rgba(255,255,255,0.6);font-size:0.78rem;margin-bottom:0.75rem">Uses your Supabase connection to restore access without losing any data.</div>
+          <div id="recovery-user-list" style="margin-bottom:0.5rem"></div>
+          <div id="recovery-msg" class="lock-error" style="margin-bottom:0.5rem"></div>
+          <button class="lock-btn" style="background:#6c5ce7;margin-bottom:0" onclick="tryRecoveryAccess()">Restore Access →</button>
+        </div>
+
+        <!-- New password after recovery -->
+        <div id="recovery-newpw-section" style="display:none;background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.3);border-radius:10px;padding:1rem;margin-bottom:0.75rem">
+          <div style="color:#c4bbff;font-weight:600;font-size:0.88rem;margin-bottom:0.5rem"><i class="bi bi-check-circle me-1 text-success"></i>Identity verified! Set a new password.</div>
+          <input class="lock-input" type="password" id="recovery-newpw" placeholder="New password (min 6 chars)" style="margin-bottom:0.5rem">
+          <input class="lock-input" type="password" id="recovery-newpw2" placeholder="Confirm new password" style="margin-bottom:0.5rem">
+          <div id="recovery-newpw-error" class="lock-error" style="margin-bottom:0.5rem"></div>
+          <button class="lock-btn" style="background:#198754;margin-bottom:0" onclick="finishRecovery()">Save New Password &amp; Enter →</button>
+        </div>
+
+        <!-- Divider -->
+        <div style="text-align:center;color:rgba(255,255,255,0.25);font-size:0.75rem;margin:0.5rem 0">— or —</div>
+
+        <!-- Nuclear reset -->
+        <div style="background:rgba(220,53,69,0.1);border:1px solid rgba(220,53,69,0.3);border-radius:10px;padding:0.85rem;margin-bottom:0.75rem">
+          <div style="color:#ff8080;font-weight:600;font-size:0.82rem;margin-bottom:0.3rem"><i class="bi bi-exclamation-triangle me-1"></i>Emergency Reset <span style="color:rgba(255,255,255,0.35);font-weight:400">(deletes all local data)</span></div>
+          <div style="color:rgba(255,255,255,0.5);font-size:0.75rem;margin-bottom:0.6rem">Only use this if Recovery Access fails. All data will be erased.</div>
+          <div id="reset-error" class="lock-error" style="margin-bottom:0.5rem"></div>
+          <button class="lock-btn" style="background:#dc3545;margin-bottom:0;font-size:0.82rem;padding:0.5rem" onclick="confirmReset()">Reset &amp; Clear All Data</button>
+        </div>
+
+        <button type="button" onclick="hideResetPanel()" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:0.82rem;width:100%;cursor:pointer;text-align:center">← Back to login</button>
       </div>
     </div>
 
@@ -1177,6 +1205,12 @@ const LEGACY_VERIFY   = 'ch_verify';
 const LEGACY_SALT     = 'ch_salt';
 const SUPABASE_CONFIG_KEY = 'ch_supabase_config';
 const VERIFY_TEXT     = 'church-mgmt-v2-verified';
+// Recovery salt — fixed bytes used to derive the recovery key from Supabase anon key
+const RECOVERY_SALT = new Uint8Array([99,104,117,114,99,104,45,114,101,99,111,118,101,114,121]); // "church-recovery"
+async function getRecoveryKey() {
+  if (!SUPABASE_ANON_KEY) return null;
+  try { return await deriveKey(SUPABASE_ANON_KEY, RECOVERY_SALT); } catch { return null; }
+}
 const PBKDF2_ITERS    = 150000;
 
 /* ── State ── */
@@ -1275,13 +1309,110 @@ function lockApp() {
   document.getElementById('lock-screen').classList.remove('hidden');
   showLockForm();
 }
-function showResetPanel(){
+/* ── Recovery Access ── */
+let _recoveryMdkRaw = null;
+let _recoveryUserId = null;
+
+function showRecoveryPanel() {
   document.getElementById('unlock-form').style.display='none';
   document.getElementById('legacy-form').style.display='none';
   document.getElementById('reset-panel').style.display='block';
+  _recoveryMdkRaw = null;
+  _recoveryUserId = null;
+  document.getElementById('recovery-newpw-section').style.display='none';
+  document.getElementById('recovery-msg').textContent='';
+  const users = getUsersList().filter(u=>u.active!==false);
+  const roleColors={senior_pastor:'#6c5ce7',administrator:'#0d6efd',staff:'#198754',volunteer_leader:'#fd7e14',read_only:'#6c757d'};
+  const listEl = document.getElementById('recovery-user-list');
+  if (!users.length) { listEl.innerHTML=''; return; }
+  listEl.innerHTML = users.map(u => {
+    const initials=(u.name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    const color=roleColors[u.role]||'#6c5ce7';
+    return `<button onclick="selectRecoveryUser('${u.id}')" id="rec-btn-${u.id}"
+      style="display:flex;align-items:center;gap:0.6rem;width:100%;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:0.5rem 0.75rem;margin-bottom:0.4rem;cursor:pointer;text-align:left">
+      <div style="width:32px;height:32px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:0.82rem;flex-shrink:0">${initials}</div>
+      <div style="color:#fff;font-size:0.88rem;font-weight:600">${esc(u.name)}<span style="color:rgba(255,255,255,0.45);font-weight:400;font-size:0.75rem;margin-left:6px">${ROLES[u.role]?.label||''}</span></div>
+      ${u.enc_mdk_recovery?'<span style="margin-left:auto;color:#86efac;font-size:0.7rem"><i class="bi bi-check-circle-fill"></i> Ready</span>':'<span style="margin-left:auto;color:rgba(255,165,0,0.7);font-size:0.7rem">&#9888; Not set</span>'}
+    </button>`;
+  }).join('');
+  if (users.length===1) selectRecoveryUser(users[0].id);
 }
+
+function selectRecoveryUser(id) {
+  _recoveryUserId = id;
+  document.querySelectorAll('[id^="rec-btn-"]').forEach(btn=>{
+    const isThis = btn.id==='rec-btn-'+id;
+    btn.style.background = isThis?'rgba(108,92,231,0.3)':'rgba(255,255,255,0.07)';
+    btn.style.borderColor = isThis?'#6c5ce7':'rgba(255,255,255,0.15)';
+  });
+  document.getElementById('recovery-msg').textContent='';
+}
+
+async function tryRecoveryAccess() {
+  const msg = document.getElementById('recovery-msg');
+  msg.style.color='#ff8080'; msg.textContent='';
+  if (!_recoveryUserId) { msg.textContent='Please select an account above.'; return; }
+  const users = getUsersList();
+  const user  = users.find(u=>u.id===_recoveryUserId);
+  if (!user) { msg.textContent='User not found.'; return; }
+  if (!user.enc_mdk_recovery) {
+    msg.textContent='Recovery key not set for this account yet. Log in once with your current password and it will be set automatically from then on.';
+    return;
+  }
+  if (!SUPABASE_ANON_KEY) { msg.textContent='No Supabase credentials found in this file.'; return; }
+  msg.style.color='rgba(196,187,255,0.8)'; msg.textContent='Verifying...';
+  try {
+    const rk     = await getRecoveryKey();
+    const mdkRaw = await aeDecrypt(rk, user.enc_mdk_recovery);
+    const mdk    = await importMDKRaw(mdkRaw);
+    const checkEnc = localStorage.getItem(MDK_CHECK_KEY);
+    const checkPt  = await aeDecrypt(mdk, checkEnc);
+    if (checkPt !== VERIFY_TEXT) throw new Error('MDK mismatch');
+    _recoveryMdkRaw = mdkRaw;
+    _cryptoKey      = mdk;
+    _currentUser    = {id:user.id, name:user.name, role:user.role};
+    msg.textContent='';
+    document.getElementById('recovery-newpw-section').style.display='block';
+    document.getElementById('recovery-newpw').value='';
+    document.getElementById('recovery-newpw2').value='';
+    document.getElementById('recovery-newpw').focus();
+  } catch(e) {
+    msg.style.color='#ff8080';
+    msg.textContent='Recovery failed. The stored recovery key may be outdated.';
+  }
+}
+
+async function finishRecovery() {
+  const pw  = document.getElementById('recovery-newpw').value;
+  const pw2 = document.getElementById('recovery-newpw2').value;
+  const err = document.getElementById('recovery-newpw-error');
+  if (pw.length<6) { err.textContent='Password must be at least 6 characters.'; return; }
+  if (pw!==pw2)    { err.textContent='Passwords do not match.'; return; }
+  err.textContent='';
+  try {
+    const users  = getUsersList();
+    const idx    = users.findIndex(u=>u.id===_recoveryUserId);
+    if (idx<0) throw new Error('user not found');
+    const newSaltRaw = crypto.getRandomValues(new Uint8Array(16));
+    const newSalt    = b64encode(newSaltRaw.buffer);
+    const newKey     = await deriveKey(pw, newSaltRaw);
+    const newEncMdk  = await aeEncrypt(newKey, _recoveryMdkRaw);
+    const rk         = await getRecoveryKey();
+    const newRecEnc  = rk ? await aeEncrypt(rk, _recoveryMdkRaw) : users[idx].enc_mdk_recovery;
+    users[idx] = {...users[idx], salt:newSalt, enc_mdk:newEncMdk, enc_mdk_recovery:newRecEnc};
+    saveUsersList(users);
+    await syncAllToSupabase().catch(()=>{});
+    await loadData();
+    _recoveryMdkRaw = null;
+    enterApp();
+    showToast('Password updated. Recovery key refreshed.','success');
+  } catch(e) { err.textContent='Failed: '+e.message; }
+}
+
+function showResetPanel(){ showRecoveryPanel(); }
 function hideResetPanel(){
   document.getElementById('reset-panel').style.display='none';
+  _recoveryMdkRaw=null; _recoveryUserId=null;
   showLockForm();
 }
 function confirmReset(){
@@ -1363,6 +1494,20 @@ async function tryUnlock() {
     const checkPt=await aeDecrypt(mdk,checkEnc);
     if (checkPt!==VERIFY_TEXT) throw new Error('Verification failed');
     _cryptoKey=mdk; _currentUser={id:user.id,name:user.name,role:user.role};
+    // Silently save a recovery-encrypted copy of the MDK so the user
+    // can always get back in using their Supabase credentials.
+    getRecoveryKey().then(async rk => {
+      if (!rk) return;
+      try {
+        const recEnc = await aeEncrypt(rk, mdkRaw);
+        const ul = getUsersList();
+        const ri = ul.findIndex(u=>u.id===user.id);
+        if (ri>-1 && ul[ri].enc_mdk_recovery !== recEnc) {
+          ul[ri].enc_mdk_recovery = recEnc;
+          saveUsersList(ul);
+        }
+      } catch {}
+    });
     await loadData(); enterApp();
   } catch(e) { err.textContent='Incorrect password. Please try again.'; btn.textContent='Unlock →'; document.getElementById('unlock-pw').value=''; document.getElementById('unlock-pw').focus(); }
 }
@@ -1383,7 +1528,10 @@ async function setupFirstUser() {
     const userKey=await deriveKey(pw,b64decode(salt));
     const encMdk=await aeEncrypt(userKey,mdkRaw);
     const userId=uid();
-    saveUsersList([{id:userId,name,role:'senior_pastor',salt,enc_mdk:encMdk,active:true}]);
+    // Pre-generate recovery key so the user is never locked out from day 1
+    let encMdkRecovery = '';
+    try { const rk = await getRecoveryKey(); if(rk) encMdkRecovery = await aeEncrypt(rk, mdkRaw); } catch {}
+    saveUsersList([{id:userId,name,role:'senior_pastor',salt,enc_mdk:encMdk,enc_mdk_recovery:encMdkRecovery,active:true}]);
     localStorage.setItem(MDK_CHECK_KEY,mdkCheck);
     _currentUser={id:userId,name,role:'senior_pastor'}; _cryptoKey=mdk;
     localStorage.setItem('ch_church_name_hint','{}');
