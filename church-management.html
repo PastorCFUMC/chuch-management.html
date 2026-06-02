@@ -241,6 +241,7 @@
     <a class="nav-link" href="#" onclick="return showPage('teams')"><i class="bi bi-diagram-3"></i>Teams &amp; Volunteers</a>
     <a class="nav-link" href="#" onclick="return showPage('pastors-desk')"><i class="bi bi-lightning-charge"></i>Pastor's Desk</a>
     <a class="nav-link" href="#" onclick="return showPage('worship')"><i class="bi bi-music-note-beamed"></i>Worship Planning</a>
+    <a class="nav-link" href="#" onclick="return showPage('calendar')"><i class="bi bi-calendar3"></i>Calendar</a>
     <div class="nav-section-label">Library</div>
     <a class="nav-link" href="#" onclick="return showPage('policies')"><i class="bi bi-shield-check"></i>Policies</a>
     <a class="nav-link" href="#" onclick="return showPage('ministry')"><i class="bi bi-book"></i>Ministry Resources</a>
@@ -395,19 +396,77 @@
     <li class="nav-item"><a class="nav-link active" href="#" id="pd-tab-desk" onclick="switchPDTab('desk');return false;"><i class="bi bi-clipboard-check me-1"></i>Desk</a></li>
     <li class="nav-item"><a class="nav-link" href="#" id="pd-tab-teaching" onclick="switchPDTab('teaching');return false;"><i class="bi bi-mic me-1"></i>Teaching Series</a></li>
   </ul>
+  <!-- DESK KANBAN -->
   <div id="pd-desk-pane" class="pt-3">
-    <ul class="nav nav-pills mb-3" id="task-tabs">
-      <li class="nav-item"><a class="nav-link active" href="#" onclick="return filterTasks('all',this)">All</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="return filterTasks('idea',this)">💡 Ideas</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="return filterTasks('assigned',this)">📋 Assigned</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="return filterTasks('inprogress',this)">🔄 In Progress</a></li>
-      <li class="nav-item"><a class="nav-link" href="#" onclick="return filterTasks('done',this)">✅ Done</a></li>
-    </ul>
-    <div id="tasks-list"></div>
+    <div class="d-flex gap-3 overflow-auto pb-3" id="kanban-board" style="align-items:flex-start;min-height:60vh">
+      <!-- Idea column -->
+      <div class="kanban-col flex-shrink-0" data-status="idea" style="width:260px">
+        <div class="kanban-col-header d-flex justify-content-between align-items-center mb-2 px-1">
+          <span class="fw-bold" style="font-size:0.88rem">💡 Ideas</span>
+          <span class="badge bg-light text-dark" id="col-count-idea">0</span>
+        </div>
+        <div class="kanban-cards" id="col-idea" ondragover="kanbanDragOver(event)" ondrop="kanbanDrop(event,'idea')"></div>
+        <button class="btn btn-sm w-100 mt-1" style="border:2px dashed #dee2e6;color:#adb5bd;background:transparent" onclick="openTaskModal(null,'idea')"><i class="bi bi-plus"></i> Add card</button>
+      </div>
+      <!-- Assigned column -->
+      <div class="kanban-col flex-shrink-0" data-status="assigned" style="width:260px">
+        <div class="kanban-col-header d-flex justify-content-between align-items-center mb-2 px-1">
+          <span class="fw-bold" style="font-size:0.88rem">📋 Assigned</span>
+          <span class="badge bg-light text-dark" id="col-count-assigned">0</span>
+        </div>
+        <div class="kanban-cards" id="col-assigned" ondragover="kanbanDragOver(event)" ondrop="kanbanDrop(event,'assigned')"></div>
+        <button class="btn btn-sm w-100 mt-1" style="border:2px dashed #dee2e6;color:#adb5bd;background:transparent" onclick="openTaskModal(null,'assigned')"><i class="bi bi-plus"></i> Add card</button>
+      </div>
+      <!-- In Progress column -->
+      <div class="kanban-col flex-shrink-0" data-status="inprogress" style="width:260px">
+        <div class="kanban-col-header d-flex justify-content-between align-items-center mb-2 px-1">
+          <span class="fw-bold" style="font-size:0.88rem">🔄 In Progress</span>
+          <span class="badge bg-light text-dark" id="col-count-inprogress">0</span>
+        </div>
+        <div class="kanban-cards" id="col-inprogress" ondragover="kanbanDragOver(event)" ondrop="kanbanDrop(event,'inprogress')"></div>
+        <button class="btn btn-sm w-100 mt-1" style="border:2px dashed #dee2e6;color:#adb5bd;background:transparent" onclick="openTaskModal(null,'inprogress')"><i class="bi bi-plus"></i> Add card</button>
+      </div>
+      <!-- Done column -->
+      <div class="kanban-col flex-shrink-0" data-status="done" style="width:260px">
+        <div class="kanban-col-header d-flex justify-content-between align-items-center mb-2 px-1">
+          <span class="fw-bold" style="font-size:0.88rem">✅ Done</span>
+          <span class="badge bg-light text-dark" id="col-count-done">0</span>
+        </div>
+        <div class="kanban-cards" id="col-done" ondragover="kanbanDragOver(event)" ondrop="kanbanDrop(event,'done')"></div>
+        <button class="btn btn-sm w-100 mt-1" style="border:2px dashed #dee2e6;color:#adb5bd;background:transparent" onclick="openTaskModal(null,'done')"><i class="bi bi-plus"></i> Add card</button>
+      </div>
+    </div>
   </div>
+
+  <!-- TEACHING SERIES KANBAN -->
   <div id="pd-teaching-pane" style="display:none" class="pt-3">
     <div id="series-list-pane">
-      <div id="series-grid" class="row g-3"></div>
+      <div class="d-flex gap-3 overflow-auto pb-3" id="series-kanban" style="align-items:flex-start;min-height:60vh">
+        <div class="kanban-col flex-shrink-0" data-sstatus="planned" style="width:260px">
+          <div class="kanban-col-header d-flex justify-content-between align-items-center mb-2 px-1">
+            <span class="fw-bold" style="font-size:0.88rem">📅 Planned</span>
+            <span class="badge bg-light text-dark" id="scol-count-planned">0</span>
+          </div>
+          <div class="kanban-cards" id="scol-planned" ondragover="kanbanDragOver(event)" ondrop="seriesKanbanDrop(event,'planned')"></div>
+          <button class="btn btn-sm w-100 mt-1" style="border:2px dashed #dee2e6;color:#adb5bd;background:transparent" onclick="openSeriesModal(null,'planned')"><i class="bi bi-plus"></i> Add series</button>
+        </div>
+        <div class="kanban-col flex-shrink-0" data-sstatus="active" style="width:260px">
+          <div class="kanban-col-header d-flex justify-content-between align-items-center mb-2 px-1">
+            <span class="fw-bold" style="font-size:0.88rem">🔥 Active</span>
+            <span class="badge bg-light text-dark" id="scol-count-active">0</span>
+          </div>
+          <div class="kanban-cards" id="scol-active" ondragover="kanbanDragOver(event)" ondrop="seriesKanbanDrop(event,'active')"></div>
+          <button class="btn btn-sm w-100 mt-1" style="border:2px dashed #dee2e6;color:#adb5bd;background:transparent" onclick="openSeriesModal(null,'active')"><i class="bi bi-plus"></i> Add series</button>
+        </div>
+        <div class="kanban-col flex-shrink-0" data-sstatus="completed" style="width:260px">
+          <div class="kanban-col-header d-flex justify-content-between align-items-center mb-2 px-1">
+            <span class="fw-bold" style="font-size:0.88rem">✅ Completed</span>
+            <span class="badge bg-light text-dark" id="scol-count-completed">0</span>
+          </div>
+          <div class="kanban-cards" id="scol-completed" ondragover="kanbanDragOver(event)" ondrop="seriesKanbanDrop(event,'completed')"></div>
+          <button class="btn btn-sm w-100 mt-1" style="border:2px dashed #dee2e6;color:#adb5bd;background:transparent" onclick="openSeriesModal(null,'completed')"><i class="bi bi-plus"></i> Add series</button>
+        </div>
+      </div>
     </div>
     <div id="sermon-list-pane" style="display:none">
       <div class="d-flex align-items-center gap-3 mb-4">
@@ -523,6 +582,76 @@
   </div>
 </div>
 
+<!-- CALENDAR -->
+<div id="page-calendar" class="page-section">
+  <div class="quick-bar d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+      <h5 class="fw-bold mb-1"><i class="bi bi-calendar3 me-2"></i>Calendar</h5>
+      <div style="font-size:0.85rem;opacity:0.85">Church events synced with Google Calendar.</div>
+    </div>
+    <div class="d-flex gap-2 align-items-center flex-wrap">
+      <div id="gcal-status-pill"></div>
+      <button class="btn btn-outline-secondary btn-sm" onclick="gcalPrevMonth()"><i class="bi bi-chevron-left"></i></button>
+      <span id="cal-month-label" class="fw-semibold" style="min-width:160px;text-align:center;font-size:1rem"></span>
+      <button class="btn btn-outline-secondary btn-sm" onclick="gcalNextMonth()"><i class="bi bi-chevron-right"></i></button>
+      <button class="btn btn-outline-secondary btn-sm" onclick="gcalGoToday()">Today</button>
+      <button class="btn btn-accent" id="gcal-add-btn" onclick="openCalEventModal(null,null)" style="display:none"><i class="bi bi-plus-lg me-1"></i>Add Event</button>
+    </div>
+  </div>
+
+  <!-- Google Connect banner -->
+  <div id="gcal-connect-banner" class="card p-4 text-center mb-3" style="display:none">
+    <div style="font-size:2rem;margin-bottom:0.5rem">📅</div>
+    <div class="fw-bold mb-1">Connect Google Calendar</div>
+    <div class="text-muted small mb-3">Sign in with Google to view and manage your church calendar events.</div>
+    <div id="gcal-connect-error" class="text-danger small mb-2" style="display:none"></div>
+    <button class="btn btn-primary" onclick="gcalConnect()" id="gcal-connect-btn">
+      <svg width="18" height="18" viewBox="0 0 48 48" style="vertical-align:middle;margin-right:8px"><path fill="#4285F4" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.8 2.3 30.3 0 24 0 14.7 0 6.7 5.4 2.7 13.3l7.8 6.1C12.4 13.1 17.7 9.5 24 9.5z"/><path fill="#34A853" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.4c-.5 2.8-2.2 5.2-4.6 6.8l7.2 5.6c4.2-3.9 6.7-9.6 7.1-16.4z"/><path fill="#FBBC05" d="M10.5 28.6A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.1.8-4.6L2.5 13.3A23.9 23.9 0 0 0 0 24c0 3.9.9 7.5 2.7 10.7l7.8-6.1z"/><path fill="#EA4335" d="M24 48c6.5 0 12-2.1 16-5.7l-7.2-5.6c-2.2 1.5-5 2.4-8.8 2.4-6.3 0-11.6-3.7-13.5-9.1L2.7 36.7C6.7 44.1 14.7 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg>
+      Sign in with Google
+    </button>
+    <div class="text-muted small mt-3" style="font-size:0.75rem">Requires a Google Client ID in Settings → Google Calendar.</div>
+  </div>
+
+  <!-- Setup needed banner -->
+  <div id="gcal-setup-banner" class="card p-4 text-center mb-3" style="display:none">
+    <div style="font-size:2rem;margin-bottom:0.5rem">⚙️</div>
+    <div class="fw-bold mb-1">Google Calendar Setup Required</div>
+    <div class="text-muted small mb-3">Add your Google Client ID in Settings to enable Google Calendar sync.</div>
+    <button class="btn btn-primary btn-sm" onclick="showPage('settings');setTimeout(()=>document.getElementById('s-gcal-client-id')?.focus(),300)">Go to Settings →</button>
+  </div>
+
+  <!-- Calendar grid -->
+  <div id="gcal-main" style="display:none">
+    <!-- Day-of-week headers -->
+    <div class="d-grid mb-1" style="grid-template-columns:repeat(7,1fr);gap:2px;display:grid">
+      <div class="text-center text-muted fw-semibold" style="font-size:0.78rem;padding:4px">Sun</div>
+      <div class="text-center text-muted fw-semibold" style="font-size:0.78rem;padding:4px">Mon</div>
+      <div class="text-center text-muted fw-semibold" style="font-size:0.78rem;padding:4px">Tue</div>
+      <div class="text-center text-muted fw-semibold" style="font-size:0.78rem;padding:4px">Wed</div>
+      <div class="text-center text-muted fw-semibold" style="font-size:0.78rem;padding:4px">Thu</div>
+      <div class="text-center text-muted fw-semibold" style="font-size:0.78rem;padding:4px">Fri</div>
+      <div class="text-center text-muted fw-semibold" style="font-size:0.78rem;padding:4px">Sat</div>
+    </div>
+    <div id="gcal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px"></div>
+    <div id="gcal-loading" class="text-center text-muted py-4" style="display:none"><i class="bi bi-hourglass-split me-2"></i>Loading events…</div>
+  </div>
+
+  <!-- Event detail popover (inline) -->
+  <div id="gcal-event-detail" style="display:none" class="card p-3 mt-2">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <div class="fw-bold" id="ged-title"></div>
+        <div class="text-muted small" id="ged-time"></div>
+        <div class="text-muted small" id="ged-desc"></div>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-outline-danger" id="ged-delete-btn" onclick="gcalDeleteEvent()"><i class="bi bi-trash"></i></button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('gcal-event-detail').style.display='none'"><i class="bi bi-x"></i></button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- POLICIES -->
 <div id="page-policies" class="page-section">
   <div class="quick-bar d-flex justify-content-between align-items-center">
@@ -578,6 +707,36 @@
         <div class="mb-3"><label class="form-label">UMC District</label><input type="text" class="form-control" id="s-district"></div>
         <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
         <span id="settings-saved" class="text-success ms-2" style="display:none"><i class="bi bi-check-circle me-1"></i>Saved!</span>
+      </div>
+    </div>
+    <div class="col-12">
+      <div class="card p-4">
+        <h6 class="fw-bold mb-1"><i class="bi bi-calendar3 me-2 text-muted"></i>Google Calendar Integration</h6>
+        <p class="text-muted small mb-3">Connect to Google Calendar to view and manage church events. Requires a Google Cloud project.</p>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Google Client ID <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="s-gcal-client-id" placeholder="xxxx.apps.googleusercontent.com">
+            <div class="form-text">From Google Cloud Console → APIs &amp; Services → Credentials.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Calendar ID</label>
+            <input type="text" class="form-control" id="s-gcal-calendar-id" placeholder="primary  (or paste full calendar ID)">
+            <div class="form-text">Use <code>primary</code> for your main calendar, or paste the Calendar ID from Google Calendar settings.</div>
+          </div>
+        </div>
+        <div class="mt-3 p-3 rounded" style="background:#f8f9fa;border:1px solid #dee2e6;font-size:0.82rem">
+          <div class="fw-semibold mb-2">Setup Instructions:</div>
+          <ol class="mb-0 ps-3" style="line-height:2">
+            <li>Go to <a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a> → create a project</li>
+            <li>Enable the <strong>Google Calendar API</strong></li>
+            <li>Go to <strong>APIs &amp; Services → Credentials → Create Credentials → OAuth 2.0 Client ID</strong></li>
+            <li>Application type: <strong>Web application</strong></li>
+            <li>Add your site URL to <strong>Authorized JavaScript origins</strong> (e.g. <code>https://your-app.vercel.app</code>)</li>
+            <li>Copy the Client ID and paste it above, then save settings</li>
+          </ol>
+        </div>
+        <button class="btn btn-primary mt-3" onclick="saveSettings()"><i class="bi bi-save me-1"></i>Save Google Calendar Settings</button>
       </div>
     </div>
     <div class="col-md-6">
@@ -776,22 +935,57 @@ alter publication supabase_realtime add table church_data;</pre>
 
 <!-- Task Modal -->
 <div class="modal fade" id="modal-task" tabindex="-1">
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-lg">
     <div class="modal-content">
-      <div class="modal-header"><h5 class="modal-title fw-bold" id="modal-task-title">Capture Task / Idea</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold" id="modal-task-title">Capture Task / Idea</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
       <div class="modal-body">
         <input type="hidden" id="tk-id">
-        <div class="row g-3">
-          <div class="col-12"><label class="form-label">Title <span class="text-danger">*</span></label><input type="text" class="form-control" id="tk-title"></div>
-          <div class="col-12"><label class="form-label">Description / Context</label><textarea class="form-control" id="tk-desc" rows="3"></textarea></div>
-          <div class="col-6"><label class="form-label">Category</label><select class="form-select" id="tk-category"><option>Administration</option><option>Pastoral Care</option><option>Outreach</option><option>Communications</option><option>Facility</option><option>Finance</option><option>Worship</option><option>Children &amp; Youth</option><option>Follow-Up</option><option>Vision &amp; Planning</option><option>Other</option></select></div>
-          <div class="col-6"><label class="form-label">Priority</label><select class="form-select" id="tk-priority"><option value="high">🔴 High</option><option value="medium" selected>🟡 Medium</option><option value="low">🟢 Low</option></select></div>
-          <div class="col-6"><label class="form-label">Assign To</label><select class="form-select" id="tk-assigned"><option value="">— Unassigned —</option></select></div>
-          <div class="col-6"><label class="form-label">Due Date</label><input type="date" class="form-control" id="tk-due"></div>
-          <div class="col-6"><label class="form-label">Status</label><select class="form-select" id="tk-status"><option value="idea">💡 Idea</option><option value="assigned">📋 Assigned</option><option value="inprogress">🔄 In Progress</option><option value="done">✅ Done</option></select></div>
+        <!-- Tabs -->
+        <ul class="nav nav-tabs mb-3">
+          <li class="nav-item"><a class="nav-link active" href="#" onclick="switchTaskTab('details',this);return false;"><i class="bi bi-card-text me-1"></i>Details</a></li>
+          <li class="nav-item"><a class="nav-link" href="#" onclick="switchTaskTab('notes',this);return false;"><i class="bi bi-sticky me-1"></i>Notes</a></li>
+          <li class="nav-item"><a class="nav-link" href="#" onclick="switchTaskTab('files',this);return false;"><i class="bi bi-paperclip me-1"></i>Files <span class="badge bg-secondary ms-1" id="tk-file-count" style="font-size:0.65rem">0</span></a></li>
+        </ul>
+
+        <!-- Details tab -->
+        <div id="tk-tab-details">
+          <div class="row g-3">
+            <div class="col-12"><label class="form-label">Title <span class="text-danger">*</span></label><input type="text" class="form-control" id="tk-title"></div>
+            <div class="col-12"><label class="form-label">Description / Context</label><textarea class="form-control" id="tk-desc" rows="2"></textarea></div>
+            <div class="col-6"><label class="form-label">Category</label><select class="form-select" id="tk-category"><option>Administration</option><option>Pastoral Care</option><option>Outreach</option><option>Communications</option><option>Facility</option><option>Finance</option><option>Worship</option><option>Children &amp; Youth</option><option>Follow-Up</option><option>Vision &amp; Planning</option><option>Other</option></select></div>
+            <div class="col-6"><label class="form-label">Priority</label><select class="form-select" id="tk-priority"><option value="high">🔴 High</option><option value="medium" selected>🟡 Medium</option><option value="low">🟢 Low</option></select></div>
+            <div class="col-6"><label class="form-label">Assign To</label><select class="form-select" id="tk-assigned"><option value="">— Unassigned —</option></select></div>
+            <div class="col-6"><label class="form-label">Due Date</label><input type="date" class="form-control" id="tk-due"></div>
+            <div class="col-6"><label class="form-label">Status</label><select class="form-select" id="tk-status"><option value="idea">💡 Idea</option><option value="assigned">📋 Assigned</option><option value="inprogress">🔄 In Progress</option><option value="done">✅ Done</option></select></div>
+          </div>
+        </div>
+
+        <!-- Notes tab -->
+        <div id="tk-tab-notes" style="display:none">
+          <label class="form-label fw-semibold">Notes</label>
+          <textarea class="form-control" id="tk-notes" rows="10" placeholder="Type notes, ideas, action items, Scripture references, prayer points…" style="font-size:0.9rem;line-height:1.6"></textarea>
+          <div class="text-muted small mt-1">Supports plain text. Notes are saved with the card.</div>
+        </div>
+
+        <!-- Files tab -->
+        <div id="tk-tab-files" style="display:none">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <label class="form-label fw-semibold mb-0">Attachments</label>
+            <button class="btn btn-sm btn-outline-primary" onclick="document.getElementById('tk-file-input').click()"><i class="bi bi-upload me-1"></i>Upload File</button>
+          </div>
+          <input type="file" id="tk-file-input" style="display:none" multiple onchange="handleTaskFileUpload(event)">
+          <div id="tk-files-list"></div>
+          <div id="tk-files-empty" class="text-muted small text-center py-3">No files attached yet.</div>
+          <div id="tk-files-progress" style="display:none" class="text-muted small py-1"><i class="bi bi-hourglass-split me-1"></i>Reading file…</div>
         </div>
       </div>
-      <div class="modal-footer"><button class="btn btn-light" data-bs-dismiss="modal">Cancel</button><button class="btn btn-accent" onclick="saveTask()">Save</button></div>
+      <div class="modal-footer">
+        <button class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-accent" onclick="saveTask()">Save Card</button>
+      </div>
     </div>
   </div>
 </div>
@@ -871,17 +1065,40 @@ alter publication supabase_realtime add table church_data;</pre>
 
 <!-- Series Modal -->
 <div class="modal fade" id="modal-series" tabindex="-1">
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header"><h5 class="modal-title fw-bold" id="modal-series-title">New Teaching Series</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-      <div class="modal-body">
+      <div class="modal-body p-0">
         <input type="hidden" id="sr-id">
-        <div class="row g-3">
-          <div class="col-12"><label class="form-label">Series Name <span class="text-danger">*</span></label><input type="text" class="form-control" id="sr-name" placeholder="e.g. Rooted in Faith"></div>
-          <div class="col-12"><label class="form-label">Description</label><textarea class="form-control" id="sr-desc" rows="3"></textarea></div>
-          <div class="col-6"><label class="form-label">Start Date</label><input type="date" class="form-control" id="sr-start"></div>
-          <div class="col-6"><label class="form-label">End Date</label><input type="date" class="form-control" id="sr-end"></div>
-          <div class="col-12"><label class="form-label">Status</label><select class="form-select" id="sr-status"><option value="planned">📅 Planned</option><option value="active">🔥 Active</option><option value="completed">✅ Completed</option></select></div>
+        <!-- Tabs -->
+        <ul class="nav nav-tabs px-3 pt-2">
+          <li class="nav-item"><a class="nav-link active" href="#" onclick="switchSeriesTab('details',this);return false">Details</a></li>
+          <li class="nav-item"><a class="nav-link" href="#" onclick="switchSeriesTab('notes',this);return false">Notes</a></li>
+          <li class="nav-item"><a class="nav-link" href="#" onclick="switchSeriesTab('files',this);return false">Files <span class="badge bg-secondary ms-1" id="sr-file-count">0</span></a></li>
+        </ul>
+        <!-- Details tab -->
+        <div id="sr-tab-details" class="p-3">
+          <div class="row g-3">
+            <div class="col-12"><label class="form-label">Series Name <span class="text-danger">*</span></label><input type="text" class="form-control" id="sr-name" placeholder="e.g. Rooted in Faith"></div>
+            <div class="col-12"><label class="form-label">Description</label><textarea class="form-control" id="sr-desc" rows="3"></textarea></div>
+            <div class="col-6"><label class="form-label">Start Date</label><input type="date" class="form-control" id="sr-start"></div>
+            <div class="col-6"><label class="form-label">End Date</label><input type="date" class="form-control" id="sr-end"></div>
+            <div class="col-12"><label class="form-label">Status</label><select class="form-select" id="sr-status"><option value="planned">📅 Planned</option><option value="active">🔥 Active</option><option value="completed">✅ Completed</option></select></div>
+          </div>
+        </div>
+        <!-- Notes tab -->
+        <div id="sr-tab-notes" class="p-3" style="display:none">
+          <label class="form-label fw-semibold">Series Notes</label>
+          <textarea class="form-control" id="sr-notes" rows="10" placeholder="Notes, ideas, themes, resources…" style="font-size:0.9rem;resize:vertical"></textarea>
+        </div>
+        <!-- Files tab -->
+        <div id="sr-tab-files" class="p-3" style="display:none">
+          <div class="mb-3">
+            <input type="file" id="sr-file-input" class="d-none" multiple onchange="handleSeriesFileUpload(event)">
+            <button class="btn btn-outline-primary btn-sm" onclick="document.getElementById('sr-file-input').click()"><i class="bi bi-paperclip me-1"></i>Attach Files</button>
+          </div>
+          <div id="sr-files-empty" class="text-muted small py-3 text-center"><i class="bi bi-paperclip d-block fs-4 mb-1 opacity-25"></i>No files attached yet.</div>
+          <div id="sr-files-list"></div>
         </div>
       </div>
       <div class="modal-footer"><button class="btn btn-light" data-bs-dismiss="modal">Cancel</button><button class="btn btn-accent" onclick="saveSeries()">Save Series</button></div>
@@ -1119,6 +1336,62 @@ alter publication supabase_realtime add table church_data;</pre>
   </div>
 </div>
 
+<!-- MODAL: Calendar Event -->
+<div class="modal fade" id="modal-cal-event" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold" id="modal-cal-title">Add Event</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="ce-id">
+        <div class="mb-3">
+          <label class="form-label">Event Title <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" id="ce-title" placeholder="e.g. Sunday Service, Board Meeting">
+        </div>
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <label class="form-label">Start Date <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" id="ce-start-date">
+          </div>
+          <div class="col-6">
+            <label class="form-label">Start Time</label>
+            <input type="time" class="form-control" id="ce-start-time">
+          </div>
+        </div>
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <label class="form-label">End Date</label>
+            <input type="date" class="form-control" id="ce-end-date">
+          </div>
+          <div class="col-6">
+            <label class="form-label">End Time</label>
+            <input type="time" class="form-control" id="ce-end-time">
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Location</label>
+          <input type="text" class="form-control" id="ce-location" placeholder="e.g. Main Sanctuary">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Description / Notes</label>
+          <textarea class="form-control" id="ce-desc" rows="3" placeholder="Optional details…"></textarea>
+        </div>
+        <div class="form-check mb-2">
+          <input class="form-check-input" type="checkbox" id="ce-allday" onchange="toggleCalAllDay()">
+          <label class="form-check-label small" for="ce-allday">All-day event</label>
+        </div>
+        <div id="ce-error" class="text-danger small" style="display:none"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary" onclick="saveCalEvent()">Save to Google Calendar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal fade" id="modal-import" tabindex="-1">
   <div class="modal-dialog modal-xl">
     <div class="modal-content">
@@ -1160,6 +1433,7 @@ alter publication supabase_realtime add table church_data;</pre>
   </div>
 </div>
 
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
@@ -1194,7 +1468,7 @@ const PERMS = {
 const PAGE_PERMS = {
   members:'members', visitors:'visitors', teams:'teams_view',
   'pastors-desk':'tasks_own', policies:'policies_view',
-  culture:'culture_view', ministry:'ministry_view', worship:'tasks_own', settings:'dashboard',
+  culture:'culture_view', ministry:'ministry_view', worship:'tasks_own', calendar:'tasks_own', settings:'dashboard',
 };
 
 /* ── Storage Keys ── */
@@ -1765,7 +2039,7 @@ function showPage(page) {
   document.querySelectorAll('#sidebar .nav-link').forEach(l=>l.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');
   document.querySelectorAll('#sidebar .nav-link').forEach(l=>{ if(l.getAttribute('onclick')?.includes("'"+page+"'")) l.classList.add('active'); });
-  const renders={dashboard:renderDashboard,members:renderMembers,visitors:renderVisitors,teams:renderTeams,'pastors-desk':()=>{renderTasks(currentTaskFilter);if(currentPDTab==='teaching')renderSeries();},policies:()=>renderDocs('policy'),ministry:()=>{renderDocs('ministry');renderDocs('culture');},worship:renderServicePlans,settings:loadSettings};
+  const renders={dashboard:renderDashboard,members:renderMembers,visitors:renderVisitors,teams:renderTeams,'pastors-desk':()=>{renderTasks(currentTaskFilter);if(currentPDTab==='teaching')renderSeries();},policies:()=>renderDocs('policy'),ministry:()=>{renderDocs('ministry');renderDocs('culture');},worship:renderServicePlans,calendar:renderCalendarPage,settings:loadSettings};
   renders[page]?.(); return false;
 }
 const bsModal=id=>new bootstrap.Modal(document.getElementById(id));
@@ -2009,88 +2283,196 @@ function addMemberToTeam(teamId,memberId) {
   hideModal('modal-add-team-member'); renderTeams();
 }
 
-// ── Pastor's Desk — Tasks ─────────────────────────────────────────────────
+// ── Pastor's Desk — Kanban Board ──────────────────────────────────────────
 let currentTaskFilter='all';
-function filterTasks(f,el){
-  currentTaskFilter=f;
-  document.querySelectorAll('#task-tabs .nav-link').forEach(b=>b.classList.remove('active'));
+let _kanbanDragId=null;
+// Legacy shim so dashboard render still works
+function filterTasks(f){currentTaskFilter=f;renderTasks();}
+
+/* ── Tab switcher inside task modal ── */
+function switchTaskTab(tab, el){
+  ['details','notes','files'].forEach(t=>{
+    const pane=document.getElementById('tk-tab-'+t);
+    if(pane) pane.style.display=t===tab?'':'none';
+  });
+  document.querySelectorAll('#modal-task .nav-link').forEach(a=>a.classList.remove('active'));
   if(el) el.classList.add('active');
-  renderTasks(f);
-  return false;
+  if(tab==='files') renderTaskFilesList();
 }
-function renderTasks(filter){
-  filter=filter||currentTaskFilter;
-  let tasks=db.get('tasks');
-  if(filter&&filter!=='all') tasks=tasks.filter(t=>t.status===filter);
-  tasks=[...tasks].sort((a,b)=>prioNum(b.priority)-prioNum(a.priority)||dateCmp(a.dueDate,b.dueDate));
-  const el=document.getElementById('tasks-list');
-  if(!el) return;
-  if(tasks.length===0){ el.innerHTML='<div class="empty-state" style="padding:2rem;text-align:center"><i class="bi bi-clipboard2" style="font-size:2rem;opacity:0.3"></i><div class="text-muted mt-2">No tasks here yet.</div></div>'; return; }
-  const pBg={high:'#fce8e8',medium:'#fff8ed',low:'#edf7f0',none:'#f0f0f0'};
-  const pColor={high:'#dc3545',medium:'#a0630a',low:'#198754',none:'#6c757d'};
-  el.innerHTML=tasks.map(t=>{
-    const p=t.priority||'none';
-    const done=t.status==='done';
-    return `<div class="card mb-2 ${done?'opacity-50':''}">
-      <div class="card-body py-2 px-3">
-        <div class="d-flex align-items-start gap-2">
-          <div class="flex-fill">
-            <div class="d-flex justify-content-between align-items-start">
-              <span class="${done?'text-decoration-line-through text-muted':''} fw-semibold">${esc(t.title)}</span>
-              <div class="d-flex gap-1 ms-2 flex-shrink-0">
-                <span class="badge" style="background:${pBg[p]};color:${pColor[p]};border:1px solid ${pColor[p]};font-size:0.7rem">${p}</span>
-                <button class="btn btn-sm p-0 px-1" onclick="openTaskModal('${t.id}')"><i class="bi bi-pencil text-muted"></i></button>
-                <button class="btn btn-sm p-0 px-1" onclick="deleteTask('${t.id}')"><i class="bi bi-trash text-muted"></i></button>
-              </div>
-            </div>
-            ${t.desc?`<div class="text-muted small mt-1">${esc(t.desc)}</div>`:''}
-            <div class="d-flex gap-2 mt-1 flex-wrap">
-              ${t.category?`<span class="badge bg-light text-dark" style="font-size:0.7rem">${esc(t.category)}</span>`:''}
-              ${t.dueDate?`<span class="text-muted small"><i class="bi bi-calendar2 me-1"></i>${t.dueDate}</span>`:''}
-              <span class="badge" style="background:#e9ecef;color:#495057;font-size:0.7rem">${t.status||'idea'}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
+
+/* ── Render all 4 kanban columns ── */
+function renderTasks(){
+  const tasks=db.get('tasks');
+  const cols=['idea','assigned','inprogress','done'];
+  cols.forEach(status=>{
+    const col=document.getElementById('col-'+status);
+    const cnt=document.getElementById('col-count-'+status);
+    if(!col) return;
+    const colTasks=[...tasks].filter(t=>t.status===status)
+      .sort((a,b)=>prioNum(b.priority)-prioNum(a.priority)||dateCmp(a.dueDate,b.dueDate));
+    if(cnt) cnt.textContent=colTasks.length;
+    if(!colTasks.length){
+      col.innerHTML='<div style="min-height:40px"></div>';
+      return;
+    }
+    col.innerHTML=colTasks.map(t=>buildTaskCard(t)).join('');
+  });
 }
-function openTaskModal(id){
+
+function buildTaskCard(t){
+  const pColors={high:'#dc3545',medium:'#fd7e14',low:'#198754',none:'#adb5bd'};
+  const p=t.priority||'none';
+  const fileCount=(t.files||[]).length;
+  const hasNotes=!!(t.notes&&t.notes.trim());
+  const users=getUsersList();
+  const assignee=t.assignedTo?users.find(u=>u.id===t.assignedTo):null;
+  const overdue=t.dueDate&&new Date(t.dueDate)<new Date()&&t.status!=='done';
+  return `<div class="kanban-card prio-${p}" draggable="true"
+    ondragstart="kanbanDragStart(event,'${t.id}')"
+    ondragend="kanbanDragEnd(event)">
+    <div class="card-actions">
+      <button class="btn btn-sm p-0 px-1 text-primary" onclick="openTaskModal('${t.id}')" title="Edit"><i class="bi bi-pencil" style="font-size:0.75rem"></i></button>
+      <button class="btn btn-sm p-0 px-1 text-danger" onclick="deleteTask('${t.id}')" title="Delete"><i class="bi bi-trash" style="font-size:0.75rem"></i></button>
+    </div>
+    <div class="card-title ${t.status==='done'?'text-decoration-line-through text-muted':''}">${esc(t.title)}</div>
+    ${t.desc?`<div class="card-desc">${esc(t.desc.slice(0,80))}${t.desc.length>80?'…':''}</div>`:''}
+    ${hasNotes?`<div class="card-notes-preview"><i class="bi bi-sticky me-1" style="opacity:0.5"></i>${esc(t.notes.slice(0,100))}${t.notes.length>100?'…':''}</div>`:''}
+    <div class="card-meta">
+      ${t.category?`<span class="badge bg-light text-dark" style="font-size:0.68rem">${esc(t.category)}</span>`:''}
+      ${assignee?`<span style="color:#6c5ce7"><i class="bi bi-person-fill me-1"></i>${esc(assignee.name.split(' ')[0])}</span>`:''}
+      ${t.dueDate?`<span style="color:${overdue?'#dc3545':'#6c757d'}"><i class="bi bi-calendar2 me-1"></i>${t.dueDate}</span>`:''}
+      ${fileCount?`<span class="card-attach-count"><i class="bi bi-paperclip me-1"></i>${fileCount}</span>`:''}
+      <span class="badge ms-auto" style="background:${pColors[p]}22;color:${pColors[p]};font-size:0.65rem">${p}</span>
+    </div>
+  </div>`;
+}
+
+/* ── Drag & drop ── */
+function kanbanDragStart(e,id){ _kanbanDragId=id; e.currentTarget.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; }
+function kanbanDragEnd(e){ e.currentTarget.classList.remove('dragging'); document.querySelectorAll('.kanban-cards').forEach(c=>c.classList.remove('drag-target')); }
+function kanbanDragOver(e){ e.preventDefault(); e.currentTarget.classList.add('drag-target'); }
+function kanbanDrop(e,status){
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-target');
+  if(!_kanbanDragId) return;
+  const tasks=db.get('tasks');
+  const idx=tasks.findIndex(t=>t.id===_kanbanDragId);
+  if(idx>-1){ tasks[idx]={...tasks[idx],status}; db.set('tasks',tasks); }
+  _kanbanDragId=null;
+  renderTasks();
+}
+
+/* ── Open task modal ── */
+function openTaskModal(id,defaultStatus){
   const t=id?db.get('tasks').find(x=>x.id===id):null;
-  document.getElementById('modal-task-title').textContent=t?'Edit Task':'Capture Task / Idea';
+  document.getElementById('modal-task-title').textContent=t?'Edit Card':'New Card';
   document.getElementById('tk-id').value=t?.id||'';
   document.getElementById('tk-title').value=t?.title||'';
   document.getElementById('tk-desc').value=t?.desc||'';
+  document.getElementById('tk-notes').value=t?.notes||'';
   document.getElementById('tk-category').value=t?.category||'Administration';
   document.getElementById('tk-priority').value=t?.priority||'medium';
   document.getElementById('tk-due').value=t?.dueDate||'';
-  document.getElementById('tk-status').value=t?.status||'idea';
-  // populate assigned dropdown
+  document.getElementById('tk-status').value=t?.status||defaultStatus||'idea';
   const sel=document.getElementById('tk-assigned');
   const users=getUsersList();
   sel.innerHTML='<option value="">— Unassigned —</option>'+users.map(u=>`<option value="${u.id}"${t?.assignedTo===u.id?' selected':''}>${esc(u.name)}</option>`).join('');
+  // Reset to Details tab
+  switchTaskTab('details', document.querySelector('#modal-task .nav-link'));
+  // File count badge
+  const fc=document.getElementById('tk-file-count');
+  if(fc) fc.textContent=(t?.files||[]).length||'0';
   showModal('modal-task');
 }
+
+/* ── Save task ── */
 function saveTask(){
   const id=document.getElementById('tk-id').value;
   const title=document.getElementById('tk-title').value.trim();
   if(!title){ alert('Title is required.'); return; }
+  const existing=id?db.get('tasks').find(x=>x.id===id):null;
   const obj={
-    id:id||uid(),title,
+    id:id||uid(), title,
     desc:document.getElementById('tk-desc').value.trim(),
+    notes:document.getElementById('tk-notes').value,
     category:document.getElementById('tk-category').value,
     priority:document.getElementById('tk-priority').value,
     dueDate:document.getElementById('tk-due').value,
     status:document.getElementById('tk-status').value,
     assignedTo:document.getElementById('tk-assigned').value,
+    files:existing?.files||_tkPendingFiles||[],
     createdAt:id?undefined:new Date().toISOString()
   };
+  _tkPendingFiles=[];
   const list=db.get('tasks');
   db.set('tasks',id?list.map(x=>x.id===id?{...x,...obj}:x):[...list,obj]);
-  hideModal('modal-task'); renderTasks();
+  hideModal('modal-task');
+  renderTasks();
 }
-function deleteTask(id){ if(!confirm('Delete this task?'))return; db.set('tasks',db.get('tasks').filter(t=>t.id!==id)); renderTasks(); }
+function deleteTask(id){ if(!confirm('Delete this card?'))return; db.set('tasks',db.get('tasks').filter(t=>t.id!==id)); renderTasks(); }
 function updateTaskStatus(id,status){ db.set('tasks',db.get('tasks').map(t=>t.id===id?{...t,status}:t)); renderTasks(); }
+
+/* ── Task file attachments ── */
+let _tkPendingFiles=[];
+function handleTaskFileUpload(event){
+  const files=Array.from(event.target.files);
+  if(!files.length) return;
+  document.getElementById('tk-files-progress').style.display='';
+  const taskId=document.getElementById('tk-id').value;
+  const existing=taskId?db.get('tasks').find(x=>x.id===taskId):null;
+  if(!_tkPendingFiles.length && existing?.files) _tkPendingFiles=[...existing.files];
+  let done=0;
+  files.forEach(file=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      _tkPendingFiles.push({id:'tf_'+Date.now()+'_'+Math.random().toString(36).slice(2,5),name:file.name,size:file.size,data:e.target.result,uploadedAt:new Date().toISOString()});
+      done++;
+      if(done===files.length){
+        document.getElementById('tk-files-progress').style.display='none';
+        document.getElementById('tk-file-count').textContent=_tkPendingFiles.length;
+        renderTaskFilesList();
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+}
+function renderTaskFilesList(){
+  const taskId=document.getElementById('tk-id').value;
+  const existing=taskId?db.get('tasks').find(x=>x.id===taskId):null;
+  const files=_tkPendingFiles.length?_tkPendingFiles:(existing?.files||[]);
+  const el=document.getElementById('tk-files-list');
+  const empty=document.getElementById('tk-files-empty');
+  if(!files.length){ el.innerHTML=''; empty.style.display=''; return; }
+  empty.style.display='none';
+  el.innerHTML=files.map((f,i)=>{
+    const ext=(f.name||'').split('.').pop().toLowerCase();
+    const iconMap={pdf:'bi-file-earmark-pdf',doc:'bi-file-earmark-word',docx:'bi-file-earmark-word',xls:'bi-file-earmark-excel',xlsx:'bi-file-earmark-excel',png:'bi-file-earmark-image',jpg:'bi-file-earmark-image',jpeg:'bi-file-earmark-image',mp3:'bi-file-earmark-music'};
+    const colorMap={pdf:'#dc3545',doc:'#0d6efd',docx:'#0d6efd',xls:'#198754',xlsx:'#198754',png:'#6f42c1',jpg:'#6f42c1',jpeg:'#6f42c1',mp3:'#e83e8c'};
+    const ic=iconMap[ext]||'bi-file-earmark', cl=colorMap[ext]||'#6c757d';
+    const sz=f.size<1024?f.size+'B':f.size<1048576?(f.size/1024).toFixed(1)+'KB':(f.size/1048576).toFixed(1)+'MB';
+    return `<div class="d-flex align-items-center gap-2 py-2 border-bottom">
+      <i class="bi ${ic} fs-5" style="color:${cl};flex-shrink:0"></i>
+      <div class="flex-grow-1 overflow-hidden"><div class="fw-semibold text-truncate" style="font-size:0.85rem">${esc(f.name)}</div><div class="text-muted" style="font-size:0.73rem">${sz}</div></div>
+      <button class="btn btn-link p-1 text-primary" onclick="downloadTaskFile(${i})" title="Download"><i class="bi bi-download" style="font-size:0.8rem"></i></button>
+      <button class="btn btn-link p-1 text-danger" onclick="removeTaskFile(${i})" title="Remove"><i class="bi bi-trash" style="font-size:0.8rem"></i></button>
+    </div>`;
+  }).join('');
+}
+function downloadTaskFile(i){
+  const taskId=document.getElementById('tk-id').value;
+  const existing=taskId?db.get('tasks').find(x=>x.id===taskId):null;
+  const files=_tkPendingFiles.length?_tkPendingFiles:(existing?.files||[]);
+  const f=files[i]; if(!f) return;
+  const a=document.createElement('a'); a.href=f.data; a.download=f.name; a.click();
+}
+function removeTaskFile(i){
+  const taskId=document.getElementById('tk-id').value;
+  const existing=taskId?db.get('tasks').find(x=>x.id===taskId):null;
+  if(!_tkPendingFiles.length && existing?.files) _tkPendingFiles=[...existing.files];
+  _tkPendingFiles.splice(i,1);
+  document.getElementById('tk-file-count').textContent=_tkPendingFiles.length||'0';
+  renderTaskFilesList();
+}
 
 // ── Teaching Series ────────────────────────────────────────────────────────
 let currentPDTab='desk', currentSeriesId=null;
@@ -2111,33 +2493,56 @@ function updatePDHeaderBtns(){
   if(seriesBtn) seriesBtn.style.display=(currentPDTab==='teaching'&&!currentSeriesId)?'':'none';
   if(sermonBtn) sermonBtn.style.display=(currentPDTab==='teaching'&&!!currentSeriesId)?'':'none';
 }
+/* ── Series Kanban ── */
+let _seriesKanbanDragId=null;
+function seriesDragStart(e,id){ _seriesKanbanDragId=id; e.currentTarget.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; }
+function seriesDragEnd(e){ e.currentTarget.classList.remove('dragging'); document.querySelectorAll('.kanban-cards').forEach(c=>c.classList.remove('drag-target')); }
+function seriesKanbanDrop(e,status){
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-target');
+  if(!_seriesKanbanDragId) return;
+  const list=db.get('teaching_series');
+  const idx=list.findIndex(s=>s.id===_seriesKanbanDragId);
+  if(idx>-1){ list[idx]={...list[idx],status}; db.set('teaching_series',list); }
+  _seriesKanbanDragId=null;
+  renderSeries();
+}
+
+function buildSeriesCard(s){
+  const sermonCount=(db.get('teaching_sermons')||[]).filter(sr=>sr.seriesId===s.id).length;
+  const fileCount=(s.files||[]).length;
+  const hasNotes=!!(s.notes&&s.notes.trim());
+  const statusEmoji={planned:'📅',active:'🔥',completed:'✅'};
+  return `<div class="kanban-card ss-${s.status||'planned'}" draggable="true"
+    ondragstart="seriesDragStart(event,'${s.id}')"
+    ondragend="seriesDragEnd(event)">
+    <div class="card-actions">
+      <button class="btn btn-sm p-0 px-1 text-primary" onclick="openSeriesModal('${s.id}')" title="Edit"><i class="bi bi-pencil" style="font-size:0.75rem"></i></button>
+      <button class="btn btn-sm p-0 px-1 text-danger" onclick="deleteSeries('${s.id}')" title="Delete"><i class="bi bi-trash" style="font-size:0.75rem"></i></button>
+    </div>
+    <div class="card-title" onclick="openSeriesView('${s.id}')" style="cursor:pointer">${esc(s.name)}</div>
+    ${s.description?`<div class="card-desc">${esc(s.description.slice(0,80))}${s.description.length>80?'…':''}</div>`:''}
+    ${hasNotes?`<div class="card-notes-preview"><i class="bi bi-sticky me-1" style="opacity:0.5"></i>${esc(s.notes.slice(0,80))}${s.notes.length>80?'…':''}</div>`:''}
+    <div class="card-meta">
+      ${s.startDate?`<span style="color:#6c757d;font-size:0.72rem"><i class="bi bi-calendar2 me-1"></i>${s.startDate}</span>`:''}
+      <span style="color:#6c757d;font-size:0.72rem"><i class="bi bi-collection me-1"></i>${sermonCount} sermon${sermonCount!==1?'s':''}</span>
+      ${fileCount?`<span class="card-attach-count"><i class="bi bi-paperclip me-1"></i>${fileCount}</span>`:''}
+    </div>
+  </div>`;
+}
+
 function renderSeries(){
-  const el=document.getElementById('series-grid');
-  if(!el) return;
-  const series=db.get('teaching_series');
-  if(series.length===0){ el.innerHTML='<div class="col-12"><div class="empty-state" style="padding:2rem;text-align:center"><i class="bi bi-collection" style="font-size:2rem;opacity:0.3"></i><div class="text-muted mt-2">No teaching series yet.</div></div></div>'; return; }
-  const statusBg={active:'#d4edda',planned:'#cfe2ff',completed:'#e9ecef'};
-  const statusColor={active:'#155724',planned:'#0d6efd',completed:'#6c757d'};
-  el.innerHTML=series.map(s=>{
-    const sermonCount=(db.get('teaching_sermons')||[]).filter(sr=>sr.seriesId===s.id).length;
-    return `<div class="col-md-4">
-      <div class="card h-100" style="cursor:pointer" onclick="openSeriesView('${s.id}')">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-start mb-2">
-            <h6 class="fw-bold mb-0">${esc(s.name)}</h6>
-            <span class="badge ms-2" style="background:${statusBg[s.status]||'#e9ecef'};color:${statusColor[s.status]||'#6c757d'}">${s.status||'planned'}</span>
-          </div>
-          ${s.description?`<p class="text-muted small mb-2">${esc(s.description)}</p>`:''}
-          <div class="text-muted small">${s.startDate||''}${s.endDate?' – '+s.endDate:''}</div>
-          <div class="text-muted small mt-1"><i class="bi bi-collection me-1"></i>${sermonCount} sermon${sermonCount!==1?'s':''}</div>
-        </div>
-        <div class="card-footer bg-transparent pt-0 border-0 d-flex gap-1 justify-content-end">
-          <button class="btn btn-sm btn-outline-secondary" onclick="event.stopPropagation();openSeriesModal('${s.id}')"><i class="bi bi-pencil"></i></button>
-          <button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation();deleteSeries('${s.id}')"><i class="bi bi-trash"></i></button>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
+  const statuses=['planned','active','completed'];
+  const allSeries=db.get('teaching_series');
+  statuses.forEach(status=>{
+    const col=document.getElementById('scol-'+status);
+    const cnt=document.getElementById('scol-count-'+status);
+    if(!col) return;
+    const items=allSeries.filter(s=>(s.status||'planned')===status);
+    if(cnt) cnt.textContent=items.length;
+    if(!items.length){ col.innerHTML='<div style="min-height:40px"></div>'; return; }
+    col.innerHTML=items.map(s=>buildSeriesCard(s)).join('');
+  });
 }
 function openSeriesView(seriesId){
   currentSeriesId=seriesId;
@@ -2189,7 +2594,16 @@ function renderSermons(seriesId){
       </div>
     </div>`).join('');
 }
-function openSeriesModal(id){
+let _srPendingFiles=[];
+function switchSeriesTab(tab,el){
+  ['details','notes','files'].forEach(t=>{
+    const p=document.getElementById('sr-tab-'+t); if(p) p.style.display=t===tab?'':'none';
+  });
+  document.querySelectorAll('#modal-series .nav-link').forEach(a=>a.classList.remove('active'));
+  if(el) el.classList.add('active');
+  if(tab==='files') renderSeriesFilesList();
+}
+function openSeriesModal(id,defaultStatus){
   const s=id?db.get('teaching_series').find(x=>x.id===id):null;
   document.getElementById('modal-series-title').textContent=s?'Edit Series':'New Teaching Series';
   document.getElementById('sr-id').value=s?.id||'';
@@ -2197,18 +2611,55 @@ function openSeriesModal(id){
   document.getElementById('sr-desc').value=s?.description||'';
   document.getElementById('sr-start').value=s?.startDate||'';
   document.getElementById('sr-end').value=s?.endDate||'';
-  document.getElementById('sr-status').value=s?.status||'planned';
+  document.getElementById('sr-status').value=s?.status||defaultStatus||'planned';
+  document.getElementById('sr-notes').value=s?.notes||'';
+  _srPendingFiles=s?.files?[...s.files]:[];
+  const fc=document.getElementById('sr-file-count'); if(fc) fc.textContent=_srPendingFiles.length||'0';
+  switchSeriesTab('details', document.querySelector('#modal-series .nav-link'));
   showModal('modal-series');
 }
 function saveSeries(){
   const id=document.getElementById('sr-id').value;
   const name=document.getElementById('sr-name').value.trim();
   if(!name){ alert('Series name is required.'); return; }
-  const obj={id:id||uid(),name,description:document.getElementById('sr-desc').value.trim(),startDate:document.getElementById('sr-start').value,endDate:document.getElementById('sr-end').value,status:document.getElementById('sr-status').value,createdAt:id?undefined:new Date().toISOString()};
+  const obj={id:id||uid(),name,description:document.getElementById('sr-desc').value.trim(),startDate:document.getElementById('sr-start').value,endDate:document.getElementById('sr-end').value,status:document.getElementById('sr-status').value,notes:document.getElementById('sr-notes').value,files:[..._srPendingFiles],createdAt:id?undefined:new Date().toISOString()};
+  _srPendingFiles=[];
   const list=db.get('teaching_series');
   db.set('teaching_series',id?list.map(x=>x.id===id?{...x,...obj}:x):[...list,obj]);
   hideModal('modal-series'); renderSeries();
 }
+function handleSeriesFileUpload(event){
+  const files=Array.from(event.target.files); if(!files.length) return;
+  let done=0;
+  files.forEach(file=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      _srPendingFiles.push({id:'sf_'+Date.now()+'_'+Math.random().toString(36).slice(2,5),name:file.name,size:file.size,data:e.target.result,uploadedAt:new Date().toISOString()});
+      done++; if(done===files.length){ document.getElementById('sr-file-count').textContent=_srPendingFiles.length; renderSeriesFilesList(); }
+    };
+    reader.readAsDataURL(file);
+  });
+}
+function renderSeriesFilesList(){
+  const el=document.getElementById('sr-files-list'); const empty=document.getElementById('sr-files-empty');
+  if(!_srPendingFiles.length){ if(el) el.innerHTML=''; if(empty) empty.style.display=''; return; }
+  if(empty) empty.style.display='none';
+  el.innerHTML=_srPendingFiles.map((f,i)=>{
+    const ext=(f.name||'').split('.').pop().toLowerCase();
+    const iconMap={pdf:'bi-file-earmark-pdf',doc:'bi-file-earmark-word',docx:'bi-file-earmark-word',xls:'bi-file-earmark-excel',xlsx:'bi-file-earmark-excel',png:'bi-file-earmark-image',jpg:'bi-file-earmark-image',jpeg:'bi-file-earmark-image',mp3:'bi-file-earmark-music'};
+    const colorMap={pdf:'#dc3545',doc:'#0d6efd',docx:'#0d6efd',xls:'#198754',xlsx:'#198754',png:'#6f42c1',jpg:'#6f42c1',jpeg:'#6f42c1',mp3:'#e83e8c'};
+    const ic=iconMap[ext]||'bi-file-earmark', cl=colorMap[ext]||'#6c757d';
+    const sz=f.size<1024?f.size+'B':f.size<1048576?(f.size/1024).toFixed(1)+'KB':(f.size/1048576).toFixed(1)+'MB';
+    return `<div class="d-flex align-items-center gap-2 py-2 border-bottom">
+      <i class="bi ${ic} fs-5" style="color:${cl};flex-shrink:0"></i>
+      <div class="flex-grow-1 overflow-hidden"><div class="fw-semibold text-truncate" style="font-size:0.85rem">${esc(f.name)}</div><div class="text-muted" style="font-size:0.73rem">${sz}</div></div>
+      <button class="btn btn-link p-1 text-primary" onclick="downloadSeriesFile(${i})" title="Download"><i class="bi bi-download" style="font-size:0.8rem"></i></button>
+      <button class="btn btn-link p-1 text-danger" onclick="removeSeriesFile(${i})" title="Remove"><i class="bi bi-trash" style="font-size:0.8rem"></i></button>
+    </div>`;
+  }).join('');
+}
+function downloadSeriesFile(i){ const f=_srPendingFiles[i]; if(!f) return; const a=document.createElement('a'); a.href=f.data; a.download=f.name; a.click(); }
+function removeSeriesFile(i){ _srPendingFiles.splice(i,1); document.getElementById('sr-file-count').textContent=_srPendingFiles.length||'0'; renderSeriesFilesList(); }
 function deleteSeries(id){
   if(!confirm('Delete this series and all its sermons?')) return;
   db.set('teaching_series',db.get('teaching_series').filter(s=>s.id!==id));
@@ -2260,6 +2711,7 @@ function loadSettings(){
   const f=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=v||''; };
   f('s-church-name',s.churchName); f('s-pastor-name',s.pastorName);
   f('s-location',s.location); f('s-service-time',s.serviceTime); f('s-district',s.district);
+  f('s-gcal-client-id',s.gcalClientId); f('s-gcal-calendar-id',s.gcalCalendarId||'primary');
   const savedMins=localStorage.getItem('ch_lock_mins')||'10';
   const sel=document.getElementById('auto-lock-minutes'); if(sel) sel.value=savedMins;
   // Supabase status bar
@@ -2282,7 +2734,7 @@ function loadSettings(){
 }
 function saveSettings(){
   const g=id=>{ const el=document.getElementById(id); return el?el.value.trim():''; };
-  const s={...db.getObj('settings'),churchName:g('s-church-name'),pastorName:g('s-pastor-name'),location:g('s-location'),serviceTime:g('s-service-time'),district:g('s-district')};
+  const s={...db.getObj('settings'),churchName:g('s-church-name'),pastorName:g('s-pastor-name'),location:g('s-location'),serviceTime:g('s-service-time'),district:g('s-district'),gcalClientId:g('s-gcal-client-id'),gcalCalendarId:g('s-gcal-calendar-id')||'primary'};
   db.setObj('settings',s);
   if(s.churchName){
     const hint=JSON.stringify({n:s.churchName});
@@ -3203,6 +3655,292 @@ function deleteServiceDoc(planId, docId) {
 }
 
 /* ═══ END WORSHIP PLANNING ═══ */
+
+
+/* ═══════════════════════════════════════════════════════════
+   GOOGLE CALENDAR INTEGRATION
+   ═══════════════════════════════════════════════════════════ */
+
+let _gcalToken      = null;
+let _gcalExpiry     = 0;
+let _gcalYear       = new Date().getFullYear();
+let _gcalMonth      = new Date().getMonth();
+let _gcalEvents     = [];
+let _gcalSelectedId = null;
+let _gcalTokenClient= null;
+
+function gcalClientId()   { return db.getObj('settings').gcalClientId  || ''; }
+function gcalCalendarId() { return db.getObj('settings').gcalCalendarId|| 'primary'; }
+function gcalIsAuthed()   { return _gcalToken && Date.now() < _gcalExpiry; }
+
+function renderCalendarPage() {
+  const cid = gcalClientId();
+  document.getElementById('gcal-setup-banner').style.display   = cid ? 'none' : 'block';
+  document.getElementById('gcal-connect-banner').style.display  = (!cid||gcalIsAuthed()) ? 'none' : 'block';
+  document.getElementById('gcal-main').style.display            = gcalIsAuthed() ? 'block' : 'none';
+  document.getElementById('gcal-add-btn').style.display         = gcalIsAuthed() ? '' : 'none';
+  updateGcalStatusPill();
+  renderCalHeader();
+  if (gcalIsAuthed()) gcalFetchAndRender();
+}
+
+function gcalConnect() {
+  const cid = gcalClientId();
+  if (!cid) { showToast('Add your Google Client ID in Settings first.','warning'); showPage('settings'); return; }
+  const btn = document.getElementById('gcal-connect-btn');
+  if (btn) btn.textContent = 'Connecting...';
+  document.getElementById('gcal-connect-error').style.display = 'none';
+  try {
+    _gcalTokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: cid,
+      scope: 'https://www.googleapis.com/auth/calendar',
+      callback: (resp) => {
+        if (resp.error) {
+          const errEl = document.getElementById('gcal-connect-error');
+          errEl.textContent = 'Sign-in failed: ' + (resp.error_description || resp.error);
+          errEl.style.display = 'block';
+          if (btn) btn.textContent = 'Sign in with Google';
+          return;
+        }
+        _gcalToken  = resp.access_token;
+        _gcalExpiry = Date.now() + (resp.expires_in - 60) * 1000;
+        renderCalendarPage();
+      },
+    });
+    _gcalTokenClient.requestAccessToken({prompt:'consent'});
+  } catch(e) {
+    const errEl = document.getElementById('gcal-connect-error');
+    errEl.textContent = 'Could not initialise Google sign-in. Check your Client ID and that your site URL is in Authorized Origins.';
+    errEl.style.display = 'block';
+    if (btn) btn.textContent = 'Sign in with Google';
+  }
+}
+
+function gcalSilentRefresh() { if (_gcalTokenClient) _gcalTokenClient.requestAccessToken({prompt:''}); }
+
+function updateGcalStatusPill() {
+  const el = document.getElementById('gcal-status-pill');
+  if (!el) return;
+  if (gcalIsAuthed()) {
+    el.innerHTML = '<span class="badge" style="background:#d1fae5;color:#065f46;font-size:0.75rem"><i class="bi bi-google me-1"></i>Google Connected</span>';
+  } else if (gcalClientId()) {
+    el.innerHTML = '<span class="badge" style="background:#fee2e2;color:#991b1b;font-size:0.75rem;cursor:pointer" onclick="gcalConnect()"><i class="bi bi-google me-1"></i>Sign in</span>';
+  } else {
+    el.innerHTML = '';
+  }
+}
+
+function gcalPrevMonth() { _gcalMonth--; if(_gcalMonth<0){_gcalMonth=11;_gcalYear--;} renderCalHeader(); if(gcalIsAuthed()) gcalFetchAndRender(); }
+function gcalNextMonth() { _gcalMonth++; if(_gcalMonth>11){_gcalMonth=0;_gcalYear++;} renderCalHeader(); if(gcalIsAuthed()) gcalFetchAndRender(); }
+function gcalGoToday()   { _gcalYear=new Date().getFullYear(); _gcalMonth=new Date().getMonth(); renderCalHeader(); if(gcalIsAuthed()) gcalFetchAndRender(); }
+
+function renderCalHeader() {
+  const el = document.getElementById('cal-month-label');
+  if (el) el.textContent = new Date(_gcalYear,_gcalMonth,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+}
+
+async function gcalFetchAndRender() {
+  if (!gcalIsAuthed()) { gcalSilentRefresh(); return; }
+  document.getElementById('gcal-loading').style.display = 'block';
+  document.getElementById('gcal-grid').innerHTML = '';
+  const firstDay = new Date(_gcalYear, _gcalMonth, 1);
+  const lastDay  = new Date(_gcalYear, _gcalMonth+1, 0);
+  const tMin = firstDay.toISOString();
+  const tMax = new Date(lastDay.getFullYear(),lastDay.getMonth(),lastDay.getDate(),23,59,59).toISOString();
+  const calId = encodeURIComponent(gcalCalendarId());
+  try {
+    const res = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/${calId}/events?timeMin=${tMin}&timeMax=${tMax}&singleEvents=true&orderBy=startTime&maxResults=250`,
+      { headers: { Authorization: 'Bearer ' + _gcalToken } }
+    );
+    if (res.status === 401) { _gcalToken=null; gcalConnect(); return; }
+    if (!res.ok) throw new Error('API error ' + res.status);
+    const data = await res.json();
+    _gcalEvents = data.items || [];
+  } catch(e) {
+    showToast('Could not load Google Calendar: ' + e.message, 'warning');
+    _gcalEvents = [];
+  }
+  document.getElementById('gcal-loading').style.display = 'none';
+  renderCalGrid();
+}
+
+function renderCalGrid() {
+  const grid    = document.getElementById('gcal-grid');
+  const today   = new Date(); today.setHours(0,0,0,0);
+  const first   = new Date(_gcalYear, _gcalMonth, 1);
+  const last    = new Date(_gcalYear, _gcalMonth+1, 0);
+  const startDow= first.getDay();
+  const COLORS  = ['#6c5ce7','#0d6efd','#198754','#fd7e14','#e83e8c','#0dcaf0','#6f42c1'];
+
+  // Group events by date
+  const byDate = {};
+  _gcalEvents.forEach(ev => {
+    const d = ev.start?.date || ev.start?.dateTime?.slice(0,10);
+    if (!d) return;
+    if (!byDate[d]) byDate[d] = [];
+    byDate[d].push(ev);
+  });
+  // Overlay internal worship service plans
+  db.get('service_plans').forEach(p => {
+    if (!p.date) return;
+    if (!byDate[p.date]) byDate[p.date] = [];
+    byDate[p.date].push({_wp:true, id:'wp_'+p.id, summary:p.title||'Service', _plan:p});
+  });
+
+  const cells = [];
+  for (let i=0; i<startDow; i++) cells.push(null);
+  for (let d=1; d<=last.getDate(); d++) cells.push(d);
+  while (cells.length%7!==0) cells.push(null);
+
+  grid.innerHTML = cells.map(d => {
+    if (!d) return `<div style="min-height:80px;background:#fafafa;border:1px solid #f0f0f0;border-radius:6px"></div>`;
+    const ds   = _gcalYear+'-'+String(_gcalMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const cell = new Date(_gcalYear,_gcalMonth,d);
+    const isTod= cell.getTime()===today.getTime();
+    const evs  = byDate[ds]||[];
+    const shown= evs.slice(0,3);
+    const more = evs.length-3;
+
+    const evHtml = shown.map((ev,i)=>{
+      const color= ev._wp ? '#e8a045' : COLORS[i%COLORS.length];
+      const time = ev.start?.dateTime ? new Date(ev.start.dateTime).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' ' : '';
+      return `<div onclick="gcalShowEvent(event,'${ev.id||''}')" style="background:${color}20;color:${color};border-left:3px solid ${color};padding:1px 4px;border-radius:3px;font-size:0.7rem;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer" title="${esc(ev.summary||'')}">${time}${esc(ev.summary||'(no title)')}</div>`;
+    }).join('');
+
+    const numStyle = isTod
+      ? 'display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#6c5ce7;color:#fff;font-weight:700;font-size:0.8rem;margin-bottom:2px'
+      : 'font-size:0.8rem;font-weight:500;color:#374151;margin-bottom:2px';
+
+    return `<div onclick="openCalEventModal('${ds}',null)" style="min-height:80px;background:#fff;border:1px solid ${isTod?'#6c5ce7':'#e9ecef'};border-radius:6px;padding:4px;cursor:pointer" onmouseenter="this.style.background='#f8f7ff'" onmouseleave="this.style.background='#fff'">
+      <div style="${numStyle}">${d}</div>
+      ${evHtml}
+      ${more>0?`<div style="font-size:0.68rem;color:#6c757d">+${more} more</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function gcalShowEvent(e, id) {
+  e.stopPropagation();
+  _gcalSelectedId = id;
+  if (id && id.startsWith('wp_')) {
+    const plan = db.get('service_plans').find(p=>p.id===id.slice(3));
+    if (plan) {
+      document.getElementById('ged-title').textContent = plan.title||'Untitled Service';
+      document.getElementById('ged-time').textContent  = plan.date+(plan.serviceTime?' - '+plan.serviceTime:'');
+      document.getElementById('ged-desc').textContent  = plan.scripture||'';
+      document.getElementById('ged-delete-btn').style.display = 'none';
+      document.getElementById('gcal-event-detail').style.display = 'block';
+      return;
+    }
+  }
+  const ev = _gcalEvents.find(ev=>ev.id===id);
+  if (!ev) return;
+  const start = ev.start?.dateTime
+    ? new Date(ev.start.dateTime).toLocaleString('en-US',{dateStyle:'medium',timeStyle:'short'})
+    : ev.start?.date;
+  document.getElementById('ged-title').textContent = ev.summary||'(no title)';
+  document.getElementById('ged-time').textContent  = start||'';
+  document.getElementById('ged-desc').textContent  = [ev.location,ev.description].filter(Boolean).join(' - ');
+  document.getElementById('ged-delete-btn').style.display = '';
+  document.getElementById('gcal-event-detail').style.display = 'block';
+}
+
+function openCalEventModal(dateStr, eventId) {
+  if (!gcalIsAuthed()) { gcalConnect(); return; }
+  document.getElementById('gcal-event-detail').style.display='none';
+  document.getElementById('modal-cal-title').textContent = eventId ? 'Edit Event' : 'Add Event';
+  document.getElementById('ce-id').value        = eventId||'';
+  document.getElementById('ce-title').value     = '';
+  document.getElementById('ce-desc').value      = '';
+  document.getElementById('ce-location').value  = '';
+  document.getElementById('ce-allday').checked  = false;
+  document.getElementById('ce-error').style.display = 'none';
+  const d = dateStr||new Date().toISOString().slice(0,10);
+  document.getElementById('ce-start-date').value = d;
+  document.getElementById('ce-end-date').value   = d;
+  document.getElementById('ce-start-time').value = '09:00';
+  document.getElementById('ce-end-time').value   = '10:00';
+  if (eventId) {
+    const ev = _gcalEvents.find(e=>e.id===eventId);
+    if (ev) {
+      document.getElementById('ce-title').value    = ev.summary||'';
+      document.getElementById('ce-desc').value     = ev.description||'';
+      document.getElementById('ce-location').value = ev.location||'';
+      if (ev.start?.date) {
+        document.getElementById('ce-allday').checked = true;
+        document.getElementById('ce-start-date').value = ev.start.date;
+        document.getElementById('ce-end-date').value   = ev.end?.date||ev.start.date;
+        toggleCalAllDay();
+      } else if (ev.start?.dateTime) {
+        const s=new Date(ev.start.dateTime), en=new Date(ev.end?.dateTime||ev.start.dateTime);
+        document.getElementById('ce-start-date').value = s.toISOString().slice(0,10);
+        document.getElementById('ce-start-time').value = s.toTimeString().slice(0,5);
+        document.getElementById('ce-end-date').value   = en.toISOString().slice(0,10);
+        document.getElementById('ce-end-time').value   = en.toTimeString().slice(0,5);
+      }
+    }
+  }
+  showModal('modal-cal-event');
+}
+
+function toggleCalAllDay() {
+  const allDay = document.getElementById('ce-allday').checked;
+  ['ce-start-time','ce-end-time'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){el.disabled=allDay;el.style.opacity=allDay?'0.4':'1';}
+  });
+}
+
+async function saveCalEvent() {
+  if (!gcalIsAuthed()) { gcalConnect(); return; }
+  const title = document.getElementById('ce-title').value.trim();
+  const errEl = document.getElementById('ce-error');
+  if (!title) { errEl.textContent='Please enter a title.'; errEl.style.display=''; return; }
+  const startDate = document.getElementById('ce-start-date').value;
+  if (!startDate) { errEl.textContent='Please select a start date.'; errEl.style.display=''; return; }
+  errEl.style.display='none';
+  const allDay   = document.getElementById('ce-allday').checked;
+  const endDate  = document.getElementById('ce-end-date').value||startDate;
+  const startTime= document.getElementById('ce-start-time').value||'09:00';
+  const endTime  = document.getElementById('ce-end-time').value||'10:00';
+  const eventId  = document.getElementById('ce-id').value;
+  const calId    = encodeURIComponent(gcalCalendarId());
+  const tz       = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const body = {
+    summary:     title,
+    description: document.getElementById('ce-desc').value.trim(),
+    location:    document.getElementById('ce-location').value.trim(),
+    start: allDay ? {date:startDate}                       : {dateTime:startDate+'T'+startTime+':00',timeZone:tz},
+    end:   allDay ? {date:endDate}                         : {dateTime:endDate+'T'+endTime+':00',    timeZone:tz},
+  };
+  try {
+    const url    = eventId ? `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${eventId}` : `https://www.googleapis.com/calendar/v3/calendars/${calId}/events`;
+    const method = eventId ? 'PUT' : 'POST';
+    const res    = await fetch(url, {method, headers:{'Authorization':'Bearer '+_gcalToken,'Content-Type':'application/json'}, body:JSON.stringify(body)});
+    if (res.status===401) { _gcalToken=null; gcalConnect(); return; }
+    if (!res.ok) throw new Error(await res.text());
+    hideModal('modal-cal-event');
+    showToast(eventId ? 'Event updated!' : 'Event added to Google Calendar!','success');
+    gcalFetchAndRender();
+  } catch(e) { errEl.textContent='Failed: '+e.message; errEl.style.display=''; }
+}
+
+async function gcalDeleteEvent() {
+  if (!_gcalSelectedId||!gcalIsAuthed()) return;
+  if (!confirm('Delete this event from Google Calendar?')) return;
+  const calId = encodeURIComponent(gcalCalendarId());
+  try {
+    const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${_gcalSelectedId}`,
+      {method:'DELETE',headers:{Authorization:'Bearer '+_gcalToken}});
+    if (res.status===401){_gcalToken=null;gcalConnect();return;}
+    document.getElementById('gcal-event-detail').style.display='none';
+    showToast('Event deleted.','info');
+    gcalFetchAndRender();
+  } catch(e) { showToast('Delete failed: '+e.message,'warning'); }
+}
+
+/* ======= END GOOGLE CALENDAR ======= */
 
 // ── Service Worker (PWA) ──────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
