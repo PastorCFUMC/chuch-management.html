@@ -112,6 +112,89 @@
     #lock-screen { padding-top:env(safe-area-inset-top); }
   }
 
+  /* ── Kanban Board ── */
+  .kanban-col {
+    background:#f0f2f5;
+    border-radius:12px;
+    padding:0.75rem;
+    min-height:300px;
+  }
+  .kanban-cards {
+    min-height:60px;
+    transition:background 0.15s;
+  }
+  .kanban-cards.drag-target {
+    background:rgba(74,63,143,0.08);
+    border-radius:8px;
+  }
+  .kanban-card {
+    background:#fff;
+    border-radius:8px;
+    padding:0.65rem 0.75rem;
+    margin-bottom:0.5rem;
+    box-shadow:0 1px 4px rgba(0,0,0,0.08);
+    cursor:grab;
+    border-left:3px solid #dee2e6;
+    position:relative;
+    transition:box-shadow 0.15s, opacity 0.15s;
+  }
+  .kanban-card:hover { box-shadow:0 3px 12px rgba(0,0,0,0.13); }
+  .kanban-card.dragging { opacity:0.45; cursor:grabbing; }
+  .kanban-card .card-actions {
+    position:absolute;
+    top:0.4rem;
+    right:0.4rem;
+    display:none;
+    gap:2px;
+  }
+  .kanban-card:hover .card-actions { display:flex; }
+  .kanban-card .card-title {
+    font-weight:600;
+    font-size:0.88rem;
+    line-height:1.35;
+    margin-bottom:0.25rem;
+    padding-right:1.5rem;
+  }
+  .kanban-card .card-desc {
+    font-size:0.78rem;
+    color:#6c757d;
+    margin-bottom:0.3rem;
+    line-height:1.4;
+  }
+  .kanban-card .card-notes-preview {
+    font-size:0.75rem;
+    color:#888;
+    background:#fafafa;
+    border-radius:4px;
+    padding:0.2rem 0.4rem;
+    margin-bottom:0.3rem;
+    font-style:italic;
+  }
+  .kanban-card .card-meta {
+    display:flex;
+    flex-wrap:wrap;
+    gap:0.4rem;
+    align-items:center;
+    font-size:0.72rem;
+    color:#6c757d;
+    margin-top:0.35rem;
+  }
+  .kanban-card .card-attach-count {
+    background:#e8e4f8;
+    color:var(--primary);
+    border-radius:10px;
+    padding:1px 6px;
+    font-size:0.7rem;
+  }
+  /* Priority border colors */
+  .kanban-card.prio-high   { border-left-color:#dc3545; }
+  .kanban-card.prio-medium { border-left-color:#fd7e14; }
+  .kanban-card.prio-low    { border-left-color:#198754; }
+  /* Series status border colors */
+  .kanban-card.ss-planned   { border-left-color:#0d6efd; }
+  .kanban-card.ss-active    { border-left-color:#ff6b35; }
+  .kanban-card.ss-completed { border-left-color:#198754; }
+
   </style>
 </head>
 <body>
